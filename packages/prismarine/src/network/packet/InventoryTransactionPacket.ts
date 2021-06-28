@@ -36,7 +36,6 @@ export default class InventoryTransactionPacket extends DataPacket {
     public entityId = BigInt(0);
     public requestId!: number;
     public changeSlot = new Map();
-    public hasItemStackIds!: boolean;
 
     public decodePayload() {
         this.requestId = this.readVarInt();
@@ -48,11 +47,10 @@ export default class InventoryTransactionPacket extends DataPacket {
         }
 
         this.type = this.readUnsignedVarInt();
-        this.hasItemStackIds = this.readBool();
 
         const actionsCount = this.readUnsignedVarInt();
         for (let i = 0; i < actionsCount; i++) {
-            const networkTransaction = new NetworkTransaction().decode(this, this.hasItemStackIds);
+            const networkTransaction = new NetworkTransaction().decode(this);
             this.actions.set(i, networkTransaction);
         }
 

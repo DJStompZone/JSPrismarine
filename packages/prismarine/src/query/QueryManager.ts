@@ -42,7 +42,7 @@ export default class QueryManager {
                     res.writeByte(9);
                     res.writeInt(sessionId);
                     res.append(Buffer.from(`9513307\0`, 'binary'));
-                    await this.server.getRaknet().sendBuffer(res.getBuffer(), rinfo.getAddress(), rinfo.getPort());
+                    // TODO await this.server.getRaknet().sendBuffer(res.getBuffer(), rinfo.getAddress(), rinfo.getPort());
                     resolve(res.getBuffer());
                     return;
                 }
@@ -72,13 +72,13 @@ export default class QueryManager {
                         Buffer.from(
                             `\0${[
                                 'hostname',
-                                this.server.getRaknet().getName().getMotd(),
+                                // this.server.getRaknet().getName().getMotd(),
                                 'gametype',
                                 'SMP',
                                 'game_id',
                                 'MINECRAFTPE',
                                 'version',
-                                this.server.getRaknet().getName().getVersion(),
+                                // this.server.getRaknet().getName().getVersion(),
                                 'plugins',
                                 `JSPrismarine on Prismarine ${this.server.getConfig().getVersion()}-${this.git_rev}${
                                     (plugins.length && ': ') || ''
@@ -86,9 +86,9 @@ export default class QueryManager {
                                 'map',
                                 this.server.getWorldManager().getDefaultWorld()?.getName(),
                                 'numplayers',
-                                this.server.getRaknet().getName().getOnlinePlayerCount(),
+                                // this.server.getRaknet().getName().getOnlinePlayerCount(),
                                 'maxplayers',
-                                this.server.getRaknet().getName().getMaxPlayerCount(),
+                                // TODO this.server.getRaknet().getName().getMaxPlayerCount(),
                                 'hostport',
                                 this.server.getConfig().getPort(),
                                 'hostip',
@@ -120,7 +120,7 @@ export default class QueryManager {
                             'binary'
                         )
                     );
-                    await this.server.getRaknet().sendBuffer(res.getBuffer(), rinfo.getAddress(), rinfo.getPort());
+                    // TODO await this.server.getRaknet().sendBuffer(res.getBuffer());
 
                     resolve(res.getBuffer());
                     return;

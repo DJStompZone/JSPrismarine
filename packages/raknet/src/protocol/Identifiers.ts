@@ -1,21 +1,29 @@
-const Identifiers = {
-    ConnectedPing: 0x00,
-    UnconnectedPing: 0x01,
-    UnconnectedPong: 0x1c,
-    ConnectedPong: 0x03,
-    OpenConnectionRequest1: 0x05,
-    OpenConnectionReply1: 0x06,
-    OpenConnectionRequest2: 0x07,
-    OpenConnectionReply2: 0x08,
-    ConnectionRequest: 0x09,
-    ConnectionRequestAccepted: 0x10,
-    NewIncomingConnection: 0x13,
-    DisconnectNotification: 0x15,
-    IncompatibleProtocolVersion: 0x19,
+enum MessageIdentifiers {
+    CONNECTED_PING = 0x00,
+    UNCONNECTED_PING,
+    UNCONNECTED_PING_OPEN_CONNECTION,
+    CONNECTED_PONG,
 
-    AcknowledgePacket: 0xc0,
-    NacknowledgePacket: 0xa0,
-    Query: 0xfe
-};
+    OPEN_CONNECTION_REQUEST_1 = 0x05,
+    OPEN_CONNECTION_REPLY_1,
+    OPEN_CONNECTION_REQUEST_2,
+    OPEN_CONNECTION_REPLY_2,
 
-export default Identifiers;
+    CONNECTION_REQUEST,
+    CONNECTION_REQUEST_ACCEPTED = 0x10,
+
+    ALREADY_CONNECTED = 0x12,
+    NEW_INCOMING_CONNECTION,
+
+    DISCONNECT_NOTIFICATION = 0x15,
+
+    INCOMPATIBLE_PROTOCOL_VERSION = 0x19,
+
+    UNCONNECTED_PONG = 0x1c,
+
+    ACKNOWLEDGEMENT = 0xc0,
+    NACKNOWLEDGEMENT = 0xa0,
+
+    GAME_PACKET = 0xfe
+}
+export default MessageIdentifiers;

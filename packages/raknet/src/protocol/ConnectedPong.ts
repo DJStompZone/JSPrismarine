@@ -3,7 +3,7 @@ import Packet from './Packet';
 
 export default class ConnectedPong extends Packet {
     public constructor() {
-        super(Identifiers.ConnectedPong);
+        super(Identifiers.CONNECTED_PONG);
     }
 
     public clientTimestamp!: bigint;

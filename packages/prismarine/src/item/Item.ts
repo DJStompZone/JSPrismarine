@@ -1,6 +1,7 @@
 import { ByteOrder, NBTReader } from '@jsprismarine/nbt';
 
 import BinaryStream from '@jsprismarine/jsbinaryutils';
+import BlockMappings from '../block/BlockMappings';
 import { BlockToolType } from '../block/BlockToolType';
 import { ItemEnchantmentType } from './ItemEnchantmentType';
 import { item_id_map as ItemIdMap } from '@jsprismarine/bedrock-data';
@@ -107,13 +108,15 @@ export default class Item {
     }
 
     public networkSerialize(stream: BinaryStream): void {
+        stream.writeVarInt(this.getNetworkId());
         if (this.getName() === 'minecraft:air') {
-            stream.writeVarInt(0);
             return;
         }
 
-        stream.writeVarInt(this.getNetworkId());
         stream.writeVarInt(((this.meta & 0x7fff) << 8) | this.getAmount());
+        stream.writeBool(false); // has network id
+
+        stream.writeVarInt(BlockMappings.getRuntimeId(this.getId(), this.meta));
 
         if (this.nbt !== null) {
             // Write the amount of tags to write
@@ -141,9 +144,12 @@ export default class Item {
             return new Item({ id: 0, name: 'minecraft:air' });
         }
 
-        const temp = stream.readVarInt();
-        const amount = temp & 0xff;
-        const data = temp >> 8;
+        const count = stream.readLInt();
+        const meta = stream.readUnsignedVarInt();
+
+        const hasNetIds = stream.readBool();
+
+        const blockRid = stream.readVarInt();
 
         let nbt = null;
         const extraLen = stream.readLShort();
@@ -158,6 +164,9 @@ export default class Item {
                 throw new Error(`Failed to parse item stack nbt: ${e}`);
                 // TODO: Just log and return AIR
             }
+        } else if (extraLen > 0) {
+            const nbtReader = new NBTReader(stream, ByteOrder.ByteOrder.LITTLE_ENDIAN);
+            nbt = nbtReader.parse();
         }
 
         const countPlaceOn = stream.readVarInt();
@@ -174,6 +183,6 @@ export default class Item {
 
         // TODO: runtimeId
         // TODO: https://github.com/JSPrismarine/JSPrismarine/issues/106new
-        return new Item({ id, name: 'minecraft:unknown', meta: data });
+        return new Item({ id, name: 'minecraft:unknown', meta });
     }
 }

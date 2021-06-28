@@ -3,7 +3,7 @@ import OfflinePacket from './OfflinePacket';
 
 export default class IncompatibleProtocolVersion extends OfflinePacket {
     public constructor() {
-        super(Identifiers.IncompatibleProtocolVersion);
+        super(Identifiers.INCOMPATIBLE_PROTOCOL_VERSION);
     }
 
     public protocol!: number;

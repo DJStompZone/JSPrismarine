@@ -1,5 +1,6 @@
 import BinaryStream from '@jsprismarine/jsbinaryutils';
-import InetAddress from '../utils/InetAddress';
+import { RemoteInfo } from 'dgram';
+import assert from 'assert';
 
 export default class Packet extends BinaryStream {
     private readonly id: number;
@@ -42,36 +43,36 @@ export default class Packet extends BinaryStream {
     }
 
     // Reads a RakNet address passed into the buffer
-    public readAddress() {
-        const ver = this.readByte();
-        if (ver === 4) {
-            // Read 4 bytes
-            const ipBytes = this.getBuffer().slice(this.getOffset(), this.addOffset(4, true));
-            const addr = `${(-ipBytes[0] - 1) & 0xff}.${(-ipBytes[1] - 1) & 0xff}.${(-ipBytes[2] - 1) & 0xff}.${
-                (-ipBytes[3] - 1) & 0xff
+    public readAddress(): RemoteInfo {
+        const version = this.readByte();
+        if (version == 4) {
+            const complement = ~this.readInt();
+            const hostname = `${(complement >> 24) & 0xff}.${(complement >> 16) & 0xff}.${(complement >> 8) & 0xff}.${
+                complement & 0xff
             }`;
             const port = this.readShort();
-            return new InetAddress(addr, port, ver);
+            return { address: hostname, port: port, family: 'IPv4' } as RemoteInfo;
+        } else {
+            this.read(2);
+            const port = this.readShort();
+            this.read(4);
+            const hostname = this.read(16).toString();
+            this.read(4);
+            return { address: hostname, port: port, family: 'IPv6' } as RemoteInfo;
         }
-
-        this.addOffset(2, true); // Skip 2 bytes
-        const port = this.readShort();
-        this.addOffset(4, true); // Skip 4 bytes
-        const addr = this.getBuffer().slice(this.getOffset(), this.addOffset(16, true)).toString();
-        this.addOffset(4, true); // Skip 4 bytes
-        return new InetAddress(addr, port, ver);
     }
 
-    // Writes an IPv4 address into the buffer
-    // Needs to get refactored, also needs to be added support for IPv6
-    public writeAddress(address: InetAddress): void {
-        this.writeByte(address.getVersion() ?? 4);
-        address
-            .getAddress()
-            .split('.', 4)
-            .forEach((b) => {
-                this.writeByte(-b - 1);
-            });
-        this.writeShort(address.getPort());
+    public writeAddress(rinfo: RemoteInfo): void {
+        assert(['IPv4', 'IPv6'].includes(rinfo.family), 'Unknown address family');
+        this.writeByte(rinfo.family === 'IPv4' ? 4 : 6);
+        if (rinfo.family === 'IPv4') {
+            const splittedAddress = rinfo.address.split('.', 4);
+            for (const split of splittedAddress) {
+                this.writeByte(-split - 1);
+            }
+            this.writeShort(rinfo.port);
+        } else if (rinfo.family === 'IPv6') {
+            // TODO: support IPv6
+        }
     }
 }

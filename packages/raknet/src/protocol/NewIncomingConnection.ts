@@ -1,14 +1,14 @@
 import Identifiers from './Identifiers';
-import InetAddress from '../utils/InetAddress';
 import Packet from './Packet';
+import { RemoteInfo } from 'dgram';
 
 export default class NewIncomingConnection extends Packet {
     public constructor(buffer?: Buffer) {
-        super(Identifiers.NewIncomingConnection, buffer);
+        super(Identifiers.NEW_INCOMING_CONNECTION, buffer);
     }
 
-    public address!: InetAddress;
-    public systemAddresses: InetAddress[] = [];
+    public address!: RemoteInfo;
+    public systemAddresses: RemoteInfo[] = [];
 
     public requestTimestamp!: bigint;
     public acceptedTimestamp!: bigint;

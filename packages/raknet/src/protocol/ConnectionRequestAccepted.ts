@@ -1,13 +1,13 @@
 import Identifiers from './Identifiers';
-import InetAddress from '../utils/InetAddress';
 import Packet from './Packet';
+import { RemoteInfo } from 'dgram';
 
 export default class ConnectionRequestAccepted extends Packet {
     public constructor(buffer?: Buffer) {
-        super(Identifiers.ConnectionRequestAccepted, buffer);
+        super(Identifiers.CONNECTION_REQUEST_ACCEPTED, buffer);
     }
 
-    public clientAddress!: InetAddress;
+    public clientAddress!: RemoteInfo;
     public requestTimestamp!: bigint;
     public acceptedTimestamp!: bigint;
 
@@ -25,11 +25,10 @@ export default class ConnectionRequestAccepted extends Packet {
     public encodePayload(): void {
         this.writeAddress(this.clientAddress);
         this.writeShort(0); // Unknown
-        const sysAddresses = [new InetAddress('127.0.0.1', 0, 4)];
+        const sysAddresses = [<RemoteInfo> { address: "127.0.0.1", port: 0, family: "IPv4" }];
         for (let i = 0; i < 20; i++) {
-            this.writeAddress(sysAddresses[i] ?? new InetAddress('0.0.0.0', 0, 4));
+            this.writeAddress(sysAddresses[i] ?? <RemoteInfo> { address: "0.0.0.0", port: 0, family: "IPv4" });
         }
-
         this.writeLong(this.requestTimestamp);
         this.writeLong(this.acceptedTimestamp);
     }

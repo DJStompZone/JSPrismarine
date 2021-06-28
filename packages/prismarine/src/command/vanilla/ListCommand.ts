@@ -18,7 +18,8 @@ export default class ListCommand extends Command {
                 const source = context.getSource() as Player;
                 const players = source.getServer().getPlayerManager().getOnlinePlayers();
                 const playerArray = Array.from(players);
-                const maxPlayers = source.getServer().getRaknet().getName().getMaxPlayerCount();
+                const maxPlayers = 0;
+                // const maxPlayers = source.getServer().getRaknet().getName().getMaxPlayerCount();
                 const counter = playerArray.length;
                 const answer = playerArray.map((player) => player.getName()).join(', ');
 

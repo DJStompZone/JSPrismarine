@@ -2,6 +2,8 @@ import { isReliable, isSequenced, isSequencedOrOrdered } from './ReliabilityLaye
 
 import BinaryStream from '@jsprismarine/jsbinaryutils';
 import BitFlags from './BitFlags';
+import { ReliabilityLayer } from './Protocol';
+import assert from 'assert';
 
 export default class EncapsulatedPacket {
     // Decoded Encapsulated content
@@ -11,21 +13,21 @@ export default class EncapsulatedPacket {
     public reliability!: number;
 
     // Reliable message number, used to identify reliable messages on the network
-    public messageIndex = 0;
+    public messageIndex: number | null = null;
 
     // Identifier used with sequenced messages
-    public sequenceIndex = 0;
+    public sequenceIndex: number | null = null;
     // Identifier used for ordering packets, included in sequenced messages
-    public orderIndex = 0;
+    public orderIndex: number | null = null;
     // The order channel the packet is on, used just if the reliability type has it
-    public orderChannel = 0;
+    public orderChannel: number | null = null;
 
     // If the packet is splitted, this is the count of splits
     public splitCount = 0;
     // If the packet is splitted, this ID refers to the index in the splits array
-    public splitIndex = 0;
+    public splitIndex: number | null = null;
     // The ID of the split packet (if the packet is splitted)
-    public splitId = 0;
+    public splitId: number | null = null;
 
     public static fromBinary(stream: BinaryStream): EncapsulatedPacket {
         const packet = new EncapsulatedPacket();
@@ -68,23 +70,23 @@ export default class EncapsulatedPacket {
         stream.writeByte(header);
         stream.writeShort(this.buffer.length << 3);
 
-        if (isReliable(this.reliability)) {
-            stream.writeLTriad(this.messageIndex || 0);
+        if (this.isReliable()) {
+            stream.writeLTriad(this.messageIndex!);
         }
 
-        if (isSequenced(this.reliability)) {
-            stream.writeLTriad(this.sequenceIndex);
+        if (this.isSequenced()) {
+            stream.writeLTriad(this.sequenceIndex!);
         }
 
         if (isSequencedOrOrdered(this.reliability)) {
-            stream.writeLTriad(this.orderIndex);
-            stream.writeByte(this.orderChannel);
+            stream.writeLTriad(this.orderIndex!);
+            stream.writeByte(this.orderChannel!);
         }
 
-        if (this.splitCount > 0) {
+        if (this.isSplit()) {
             stream.writeInt(this.splitCount);
-            stream.writeShort(this.splitId);
-            stream.writeInt(this.splitIndex);
+            stream.writeShort(this.splitId!);
+            stream.writeInt(this.splitIndex!);
         }
 
         stream.append(this.buffer);
@@ -100,5 +102,39 @@ export default class EncapsulatedPacket {
             (isSequencedOrOrdered(this.reliability) ? 4 : 0) +
             (this.splitCount > 0 ? 10 : 0)
         );
+    }
+
+    public isSplit(): boolean {
+        const split = this.splitCount > 0;
+        if (split) {
+            assert(this.splitId != null, "Split packet is missing split identifier!");
+            assert(this.splitIndex != null, "Split packet is missing split index!");
+        }
+        return split;
+    }
+
+    public isReliable(): boolean {
+        const reliable = isReliable(this.reliability);
+        if (reliable) {
+            assert(this.messageIndex != null, "Reliable encapsulated doesn't have a message index!");
+        }
+        return reliable;
+    }
+    
+    public isSequenced(): boolean {
+        const sequenced = isSequenced(this.reliability);
+        if (sequenced) {
+            assert(this.sequenceIndex != null, "Sequenced encapuslated doesn't have a sequence index!");
+        }
+        return sequenced;
+    }
+    
+    public isSequencedOrOrdered(): boolean {
+        const sequencedOrOrdered = isSequencedOrOrdered(this.reliability);
+        if (sequencedOrOrdered) {
+            assert(this.orderIndex != null, "SequencedOrdered encapsulated doesn't have a order index!");
+            assert(this.orderChannel != null, "SequencedOrdered encapsulated doesn't have a order channel!");
+        }
+        return sequencedOrOrdered;
     }
 }

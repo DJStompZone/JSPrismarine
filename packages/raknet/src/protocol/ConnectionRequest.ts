@@ -3,7 +3,7 @@ import Packet from './Packet';
 
 export default class ConnectionRequest extends Packet {
     public constructor(buffer?: Buffer) {
-        super(Identifiers.ConnectionRequest, buffer);
+        super(Identifiers.CONNECTION_REQUEST, buffer);
     }
 
     public clientGUID!: bigint;

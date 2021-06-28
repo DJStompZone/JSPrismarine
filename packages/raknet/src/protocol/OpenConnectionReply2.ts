@@ -1,14 +1,14 @@
 import Identifiers from './Identifiers';
-import InetAddress from '../utils/InetAddress';
 import OfflinePacket from './OfflinePacket';
+import { RemoteInfo } from 'dgram';
 
 export default class OpenConnectionReply2 extends OfflinePacket {
     public constructor(buffer?: Buffer) {
-        super(Identifiers.OpenConnectionReply2, buffer);
+        super(Identifiers.OPEN_CONNECTION_REPLY_2, buffer);
     }
 
     public serverGUID!: bigint;
-    public clientAddress!: InetAddress;
+    public clientAddress!: RemoteInfo;
     public mtuSize!: number;
 
     public decodePayload(): void {

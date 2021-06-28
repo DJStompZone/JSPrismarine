@@ -3,7 +3,7 @@ import OfflinePacket from './OfflinePacket';
 
 export default class OpenConnectionReply1 extends OfflinePacket {
     public constructor(buffer?: Buffer) {
-        super(Identifiers.OpenConnectionReply1, buffer);
+        super(Identifiers.OPEN_CONNECTION_REPLY_1, buffer);
     }
 
     public serverGUID!: bigint;

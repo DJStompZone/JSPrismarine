@@ -5,7 +5,7 @@ import ConnectedPing from './ConnectedPing';
 import ConnectedPong from './ConnectedPong';
 import ConnectionRequest from './ConnectionRequest';
 import ConnectionRequestAccepted from './ConnectionRequestAccepted';
-import DataPacket from './DataPacket';
+import DataPacket from './Datagram';
 import DisconnectNotification from './DisconnectNotification';
 import EncapsulatedPacket from './EncapsulatedPacket';
 import Identifiers from './Identifiers';

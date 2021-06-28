@@ -120,7 +120,7 @@ export default class Server {
         await this.onEnable();
         await this.worldManager.onEnable();
 
-        this.raknet = await new Listener(this as any).listen(serverIp, port);
+        this.raknet = new Listener().listen(serverIp, port);
         this.raknet.on('openConnection', async (connection: Connection) => {
             const event = new RaknetConnectEvent(connection);
             await this.getEventManager().emit('raknetConnect', event);
@@ -149,7 +149,8 @@ export default class Server {
             const timer = new Timer();
 
             const connection = raknetConnectEvent.getConnection();
-            const token = `${connection.getAddress().getAddress()}:${connection.getAddress().getPort()}`;
+            // TODO const token = `${connection.getAddress().getAddress()}:${connection.getAddress().getPort()}`;
+            const token = '';
             this.getLogger()?.debug(`${token} is attempting to connect`, 'Server/listen/raknetDisconnect');
 
             const world = this.getWorldManager().getDefaultWorld()!;

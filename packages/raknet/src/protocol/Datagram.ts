@@ -2,13 +2,12 @@ import BitFlags from './BitFlags';
 import EncapsulatedPacket from './EncapsulatedPacket';
 import Packet from './Packet';
 
-export default class DataPacket extends Packet {
+export default class Datagram extends Packet {
     public constructor(buffer?: Buffer) {
-        super(Math.trunc(BitFlags.VALID), buffer);
+        super(BitFlags.VALID, buffer);
     }
 
     public packets: EncapsulatedPacket[] = [];
-    public sendTime!: number;
 
     // Packet sequence number
     // used to check for missing packets
@@ -16,9 +15,9 @@ export default class DataPacket extends Packet {
 
     public decodePayload(): void {
         this.sequenceNumber = this.readLTriad();
-        while (!this.feof()) {
+        do {
             this.packets.push(EncapsulatedPacket.fromBinary(this));
-        }
+        } while (!this.feof()); 
     }
 
     public encodePayload(): void {
@@ -28,13 +27,12 @@ export default class DataPacket extends Packet {
         }
     }
 
-    public getLength(): number {
-        // header (1 byte) + triad (3 bytes)
+    public getTotalByteLength(): number {
+        // header (1 byte) + seqNumber (3 bytes)
         let length = 4;
         for (const packet of this.packets) {
             length += packet.getByteLength();
         }
-
         return length;
     }
 }

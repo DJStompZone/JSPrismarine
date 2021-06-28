@@ -23,7 +23,7 @@ import WindowManager from '../inventory/WindowManager';
 import World from '../world/World';
 
 export default class Player extends Human {
-    private readonly address: InetAddress;
+    // private readonly address: InetAddress;
     private readonly playerConnection: PlayerConnection;
     private permissions: string[];
 
@@ -75,7 +75,7 @@ export default class Player extends Human {
      */
     public constructor(connection: Connection, world: World, server: Server) {
         super(world, server);
-        this.address = connection?.getAddress();
+        // TODO  this.address = connection?.getAddress();
         this.playerConnection = new PlayerConnection(server, connection, this);
         this.windows = new WindowManager();
         this.forms = new FormManager();
@@ -273,7 +273,7 @@ export default class Player extends Human {
     }
 
     public getAddress() {
-        return this.address;
+        return new InetAddress('', 0, 4); // TODO this.address;
     }
 
     public getName(): string {

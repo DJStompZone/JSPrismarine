@@ -83,7 +83,7 @@ export default class PlayerConnection {
         sendPacket.reliability = 0;
         sendPacket.buffer = batch.getBuffer();
 
-        await this.connection.addEncapsulatedToQueue(sendPacket);
+        // TODO await this.connection.addEncapsulatedToQueue(sendPacket);
         this.server.getLogger()?.silly(`Sent §b${packet.constructor.name}§r packet`, 'PlayerConnection/sendDataPacket');
     }
 
