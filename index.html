@@ -91,9 +91,9 @@
 					<h2>Why use JSPrismarine?</h2>
 				</a>
 				<ul>
-					<li>  Written in TypeScript which means that it&#39;s easy to use and develop plugins for. You can in theory develop plugins in any language that transpile into JavaScript (such as TypeScript, Kotlin, CoffeeScript, asm.js and many more).</li>
-					<li>  Open source with the permissive <a href="https://github.com/JSPrismarine/JSPrismarine/blob/master/LICENSE">MPL2</a> license.</li>
-					<li>  Under active development.</li>
+					<li>Written in TypeScript which means that it&#39;s easy to use and develop plugins for. You can in theory develop plugins in any language that transpile into JavaScript (such as TypeScript, Kotlin, CoffeeScript, asm.js and many more).</li>
+					<li>Open source with the permissive <a href="https://github.com/JSPrismarine/JSPrismarine/blob/master/LICENSE">MPL2</a> license.</li>
+					<li>Under active development.</li>
 				</ul>
 				<a href="#getting-started" id="getting-started" style="color: inherit; text-decoration: none;">
 					<h2>Getting started</h2>
@@ -101,12 +101,12 @@
 				<p>Prebuilt binaries will be provided once a stable release is out, these will not require a node environment. For now however, you can either follow the steps bellow or download the <a href="https://github.com/JSPrismarine/JSPrismarine/actions?query=branch%3Amaster+workflow%3A%22Build+artifacts%22">latest nightly</a> (which may or may not work).</p>
 				<ul>
 					<li>Linux/MacOS/Unix based OS or Windows (requires WSL)<ul>
-							<li>  You need <a href="https://nodejs.org">Node.js</a> v14+, <a href="https://www.npmjs.com">npm</a> v7+ and <a href="https://lerna.js.org/">lerna</a>.</li>
-							<li>  Clone the repository <code>git clone https://github.com/JSPrismarine/JSPrismarine.git</code>.</li>
-							<li>  Go in the cloned repository <code>cd JSPrismarine</code></li>
-							<li>  Install dependencies <code>npm install</code> and <code>lerna bootstrap</code>.</li>
-							<li>  Before running production build you have to build it <code>npm run build</code></li>
-							<li>  You&#39;re done, you can run it using <code>npm run start</code> (or <code>npm run dev</code> for development)</li>
+							<li>You need <a href="https://nodejs.org">Node.js</a> v14+, <a href="https://www.npmjs.com">npm</a> v7+ and <a href="https://lerna.js.org/">lerna</a>.</li>
+							<li>Clone the repository <code>git clone https://github.com/JSPrismarine/JSPrismarine.git</code>.</li>
+							<li>Go in the cloned repository <code>cd JSPrismarine</code></li>
+							<li>Install dependencies <code>npm install</code> and <code>lerna bootstrap</code>.</li>
+							<li>Before running production build you have to build it <code>npm run build</code></li>
+							<li>You&#39;re done, you can run it using <code>npm run start</code> (or <code>npm run dev</code> for development)</li>
 						</ul>
 					</li>
 				</ul>
@@ -115,34 +115,34 @@
 				</a>
 				<ul>
 					<li>Can I contribute?<ul>
-							<li>  Sure, make sure to read the <a href="https://github.com/JSPrismarine/JSPrismarine/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a> file first.</li>
+							<li>Sure, make sure to read the <a href="https://github.com/JSPrismarine/JSPrismarine/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a> file first.</li>
 						</ul>
 					</li>
 					<li>Is JSPrismarine for <code>Minecraft: Bedrock Edition</code> or <code>Minecraft: Java Edition</code>?<ul>
-							<li>  JSPrismarine is made for <code>Minecraft: Bedrock Edition</code>, there may however be plugin(s) available to provide a <code>Minecraft: Java Edition</code> implementation..</li>
+							<li>JSPrismarine is made for <code>Minecraft: Bedrock Edition</code>, there may however be plugin(s) available to provide a <code>Minecraft: Java Edition</code> implementation..</li>
 						</ul>
 					</li>
 					<li>What devices devices can a player join JSPrismarine with?<ul>
-							<li>  By default PC/Windows, Android, iOS. However with some tricks you can also join with Xbox One, Switch and the PS4.</li>
+							<li>By default PC/Windows, Android, iOS. However with some tricks you can also join with Xbox One, Switch and the PS4.</li>
 						</ul>
 					</li>
 					<li>Which OSes can run JSPrismarine?<ul>
-							<li>  Any platform supporting Node.js v14 or later.</li>
+							<li>Any platform supporting Node.js v14 or later.</li>
 						</ul>
 					</li>
 					<li>Does it support plugins?<ul>
-							<li>  Yes but JSPrismarine is in fast development-mode which means that currently SEMVER isn&#39;t strictly followed. We do however try to provide a deprecation warning two weeks ahead of removing an API function.</li>
+							<li>Yes but JSPrismarine is in fast development-mode which means that currently SEMVER isn&#39;t strictly followed. We do however try to provide a deprecation warning two weeks ahead of removing an API function.</li>
 						</ul>
 					</li>
 					<li>If my question isn&#39;t listed here where should I sak?<ul>
-							<li>  You can join the <a href="https://discord.gg/fGkHZhu">Discord server</a>, ask on the <a href="https://prismarine.dev">forums</a> or in case of a development-related question issue an open a <a href="https://github.com/HerryYT/JSPrismarine/issues/new">GitHub issue</a>.</li>
+							<li>You can join the <a href="https://discord.gg/fGkHZhu">Discord server</a>, ask on the <a href="https://prismarine.dev">forums</a> or in case of a development-related question issue an open a <a href="https://github.com/HerryYT/JSPrismarine/issues/new">GitHub issue</a>.</li>
 						</ul>
 					</li>
 					<li>Why can&#39;t I join a JSPrismarine instance hosted on my Windows PC?<ul>
 							<li>To join an instance of JSPrismarine hosted on the same Windows machine you need to enable Loopback by doing the following:<ul>
-									<li>  Open Windows PowerShell as administrator</li>
-									<li>  Run this command: <code>CheckNetIsolation LoopbackExempt -a -n=&quot;Microsoft.MinecraftUWP_8wekyb3d8bbwe&quot;</code></li>
-									<li>  Open Minecraft and add a server with the ip <code>127.0.0.1</code></li>
+									<li>Open Windows PowerShell as administrator</li>
+									<li>Run this command: <code>CheckNetIsolation LoopbackExempt -a -n=&quot;Microsoft.MinecraftUWP_8wekyb3d8bbwe&quot;</code></li>
+									<li>Open Minecraft and add a server with the ip <code>127.0.0.1</code></li>
 								</ul>
 							</li>
 						</ul>
@@ -152,16 +152,16 @@
 					<h2>Documentation</h2>
 				</a>
 				<ul>
-					<li>  <a href="documentation/running.md">Running JSPrismarine</a></li>
-					<li>  <a href="documentation/publish-package.md">Publish a new version</a></li>
-					<li>  <a href="documentation/experimental-flags.md">Experimental flags</a></li>
+					<li><a href="documentation/running.md">Running JSPrismarine</a></li>
+					<li><a href="documentation/publish-package.md">Publish a new version</a></li>
+					<li><a href="documentation/experimental-flags.md">Experimental flags</a></li>
 				</ul>
 				<a href="#remarks" id="remarks" style="color: inherit; text-decoration: none;">
 					<h2>Remarks</h2>
 				</a>
 				<ul>
-					<li>  JSPrismarine still in active development, currently no stable version is released.</li>
-					<li>  The plugin API isn&#39;t stable.</li>
+					<li>JSPrismarine still in active development, currently no stable version is released.</li>
+					<li>The plugin API isn&#39;t stable.</li>
 				</ul>
 			</div>
 		</div>
