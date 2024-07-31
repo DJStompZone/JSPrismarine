@@ -1,5 +1,6 @@
-import PacketBinaryStream from '../network/PacketBinaryStream';
-import Server from '../Server';
+// import BinaryStream from '@jsprismarine/jsbinaryutils';
+import type Server from '../Server';
+import { NetworkUtil } from '../network/NetworkUtil';
 
 export const GameRules = {
     CommandBlockOutput: 'commandblockoutput',
@@ -42,7 +43,7 @@ export default class GameruleManager {
         this.setGamerule('DoMobSpawning', true, true);
         this.setGamerule('DoTileDrops', true, true);
         this.setGamerule('DoWeatherCycle', true, true);
-        this.setGamerule('DrowingDamage', true, true);
+        this.setGamerule('DrowningDamage', true, true);
         this.setGamerule('FallDamage', true, true);
         this.setGamerule('FireDamage', true, true);
         this.setGamerule('KeepInventory', false, true);
@@ -57,9 +58,10 @@ export default class GameruleManager {
 
     /**
      * Sets a game rule.
-     *
-     * @param name the gamerule's name
-     * @param value the value, boolean OR number
+     * @param {string} name - the gamerule's name.
+     * @param {boolean | number} value - the value, boolean OR number.
+     * @param {boolean} editable - if the gamerule is editable.
+     * @TODO: notify clients about gamerule change.
      */
     public setGamerule(name: string, value: boolean | number, editable: boolean): void {
         this.rules.set(name.toLowerCase(), [value, editable]);
@@ -67,34 +69,33 @@ export default class GameruleManager {
 
     /**
      * Returns the gamerule value.
-     *
-     * @param name the gamerule's name
+     * @param {string} name - the gamerule's name.
      */
-    public getGamerule(name: string): any {
+    public getGamerule(name: string) {
         if (!Object.values(GameRules).includes(name.toLowerCase())) {
-            this.server.getLogger()?.error(`Unknown Gamerule with name ${name}`, 'GameruleManager/getGamerule');
+            this.server.getLogger().error(`Unknown Gamerule with name ${name}`);
         }
 
-        return this.rules.get(name.toLowerCase());
+        return this.rules.get(name.toLowerCase()) ?? null;
     }
 
     public getGamerules() {
         return this.rules;
     }
 
-    public networkSerialize(stream: PacketBinaryStream): void {
+    public networkSerialize(stream: any): void {
         const isInt = (n: number) => {
             return n % 1 === 0;
         };
 
         stream.writeUnsignedVarInt(this.getGamerules().size);
         for (const [name, [value, editable]] of this.getGamerules()) {
-            stream.writeString(name.toLowerCase());
-            stream.writeBool(editable);
+            NetworkUtil.writeString(stream, name.toLowerCase());
+            stream.writeBoolean(editable);
             switch (typeof value) {
                 case 'boolean':
                     stream.writeByte(1); // Maybe value type ??
-                    stream.writeBool(value);
+                    stream.writeBoolean(value);
                     break;
                 case 'number':
                     if (isInt(value)) {
@@ -102,13 +103,11 @@ export default class GameruleManager {
                         stream.writeUnsignedVarInt(value);
                     } else {
                         stream.writeByte(3); // Maybe value type ??
-                        stream.writeLFloat(value);
+                        stream.writeFloatLE(value);
                     }
                     break;
                 default:
-                    this.server
-                        .getLogger()
-                        ?.error('Gamerule format not implemented', 'GameruleManager/networkSerialize');
+                    this.server.getLogger().error('Gamerule format not implemented');
             }
         }
     }

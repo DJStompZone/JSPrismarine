@@ -1,5 +1,6 @@
-import DataPacket from './DataPacket';
+import { NetworkUtil } from '../../network/NetworkUtil';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class LevelSoundEventPacket extends DataPacket {
     public static NetID = Identifiers.LevelSoundEventPacket;
@@ -11,33 +12,33 @@ export default class LevelSoundEventPacket extends DataPacket {
     public positionZ!: number;
 
     public extraData!: number;
-    public entityType!: string;
-    public isBabyMob!: boolean;
+    public entityType: string = '';
+    public isBabyMob: boolean = false;
     public disableRelativeVolume!: boolean;
 
-    public decodePayload() {
+    public decodePayload(): void {
         this.sound = this.readUnsignedVarInt();
 
-        this.positionX = this.readLFloat();
-        this.positionY = this.readLFloat();
-        this.positionZ = this.readLFloat();
+        this.positionX = this.readFloatLE();
+        this.positionY = this.readFloatLE();
+        this.positionZ = this.readFloatLE();
 
         this.extraData = this.readVarInt();
-        this.entityType = this.readString();
-        this.isBabyMob = this.readBool();
-        this.disableRelativeVolume = this.readBool();
+        this.entityType = NetworkUtil.readString(this);
+        this.isBabyMob = this.readBoolean();
+        this.disableRelativeVolume = this.readBoolean();
     }
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeUnsignedVarInt(this.sound);
 
-        this.writeLFloat(this.positionX);
-        this.writeLFloat(this.positionY);
-        this.writeLFloat(this.positionZ);
+        this.writeFloatLE(this.positionX);
+        this.writeFloatLE(this.positionY);
+        this.writeFloatLE(this.positionZ);
 
         this.writeVarInt(this.extraData);
-        this.writeString(this.entityType);
-        this.writeBool(this.isBabyMob);
-        this.writeBool(this.disableRelativeVolume);
+        NetworkUtil.writeString(this, this.entityType);
+        this.writeBoolean(this.isBabyMob);
+        this.writeBoolean(this.disableRelativeVolume);
     }
 }

@@ -1,56 +1,64 @@
-import Identifiers from '../Identifiers';
-import type LoginPacket from '../packet/LoginPacket';
-import PacketHandler from './PacketHandler';
-import PlayStatusType from '../type/PlayStatusType';
-import type Player from '../../player/Player';
-import ResourcePacksInfoPacket from '../packet/ResourcePacksInfoPacket';
+import { Player } from '../../';
 import type Server from '../../Server';
+import type ClientConnection from '../ClientConnection';
+import Identifiers from '../Identifiers';
+import { PlayStatusPacket } from '../Packets';
+import type LoginPacket from '../packet/LoginPacket';
+import ResourcePacksInfoPacket from '../packet/ResourcePacksInfoPacket';
+import PlayStatusType from '../type/PlayStatusType';
+import type PreLoginPacketHandler from './PreLoginPacketHandler';
 
-export default class LoginHandler implements PacketHandler<LoginPacket> {
+export default class LoginHandler implements PreLoginPacketHandler<LoginPacket> {
     public static NetID = Identifiers.LoginPacket;
 
-    public async handle(packet: LoginPacket, server: Server, player: Player): Promise<void> {
-        // TODO: Check if player count >= max players
+    /**
+     * @TODO: Check if player count >= max players
+     * @TODO: encryption handshake.
+     */
+    public async handle(packet: LoginPacket, server: Server, connection: ClientConnection): Promise<void> {
+        const playStatus = new PlayStatusPacket();
 
         // Kick client if has newer / older client version
         if (packet.protocol !== Identifiers.Protocol) {
-            if (packet.protocol < Identifiers.Protocol) {
-                await player.getConnection().sendPlayStatus(PlayStatusType.LoginFailedClient);
-            } else {
-                await player.getConnection().sendPlayStatus(PlayStatusType.LoginFailedServer);
-            }
-
+            playStatus.status =
+                packet.protocol < Identifiers.Protocol
+                    ? PlayStatusType.LoginFailedClient
+                    : PlayStatusType.LoginFailedServer;
+            await connection.sendDataPacket(playStatus, true);
             return;
         }
 
         // Kick the player if their username is invalid
         if (!packet.displayName) {
-            await player.kick('Invalid username!');
+            connection.disconnect('Invalid username!', false);
             return;
         }
 
-        // Player with same name is already online
-        try {
-            const oldPlayer = server.getPlayerManager().getPlayerByExactName(packet.displayName);
-            await oldPlayer.kick('Logged in from another location');
-        } catch {}
+        const player = new Player({
+            connection,
+            world: server.getWorldManager().getDefaultWorld()!,
+            server,
+            uuid: packet.identity
+        });
 
-        player.username.name = packet.displayName;
-        player.locale = packet.languageCode;
-        player.randomId = packet.clientRandomId;
-        player.uuid = packet.identity;
+        player.setName(packet.displayName);
         player.xuid = packet.XUID;
-
-        if (!player.xuid && server?.getConfig?.().getOnlineMode?.()) {
-            await player.kick('Server is in online-mode!');
-            return;
-        }
-
+        player.randomId = packet.clientRandomId;
+        player.locale = packet.languageCode;
         player.skin = packet.skin;
         player.device = packet.device;
 
-        await player.onEnable();
-        await player.getConnection().sendPlayStatus(PlayStatusType.LoginSuccess);
+        // Player with same name or xuid is already connected,
+        // so kick the old player and let the new player connect.
+        await server
+            .getSessionManager()
+            .findPlayer({ name: packet.displayName, xuid: packet.XUID })
+            ?.kick('Logged in from another location');
+
+        if (!player.xuid && server.getConfig().getOnlineMode()) {
+            await player.kick('Server is in online-mode!');
+            return;
+        }
 
         const reason = server.getBanManager().isBanned(player);
         if (reason !== false) {
@@ -58,7 +66,18 @@ export default class LoginHandler implements PacketHandler<LoginPacket> {
             return;
         }
 
-        const pk = new ResourcePacksInfoPacket();
-        await player.getConnection().sendDataPacket(pk);
+        await player.enable();
+
+        // Update the player connection to be recognized as a connected player
+        const session = connection.initPlayerConnection(server, player);
+        await session.sendPlayStatus(PlayStatusType.LoginSuccess);
+
+        // Finalize connection handshake
+        const resourcePacksInfo = new ResourcePacksInfoPacket();
+        resourcePacksInfo.resourcePackRequired = false;
+        resourcePacksInfo.forceServerPacksEnabled = false;
+        resourcePacksInfo.hasScripts = false;
+        resourcePacksInfo.hasAddonPacks = false;
+        await connection.sendDataPacket(resourcePacksInfo, true);
     }
 }

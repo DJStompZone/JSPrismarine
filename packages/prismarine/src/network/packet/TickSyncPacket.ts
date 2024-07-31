@@ -1,5 +1,5 @@
-import DataPacket from './DataPacket';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class TickSyncPacket extends DataPacket {
     public static NetID = Identifiers.TickSyncPacket;
@@ -7,13 +7,13 @@ export default class TickSyncPacket extends DataPacket {
     public clientRequestTimestamp!: bigint;
     public serverReceptionTimestamp!: bigint;
 
-    public encodePayload() {
-        this.writeLLong(this.clientRequestTimestamp);
-        this.writeLLong(this.serverReceptionTimestamp);
+    public encodePayload(): void {
+        this.writeLongLE(this.clientRequestTimestamp);
+        this.writeLongLE(this.serverReceptionTimestamp);
     }
 
-    public decodePayload() {
-        this.clientRequestTimestamp = this.readLLong();
-        this.serverReceptionTimestamp = this.readLLong();
+    public decodePayload(): void {
+        this.clientRequestTimestamp = this.readLongLE();
+        this.serverReceptionTimestamp = this.readLongLE();
     }
 }

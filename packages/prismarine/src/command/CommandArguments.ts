@@ -1,21 +1,21 @@
-import * as Entities from '../entity/Entities';
-
-import { CommandContext, StringReader, Suggestions } from '@jsprismarine/brigadier';
+import type { CommandContext, StringReader } from '@jsprismarine/brigadier';
+import { Suggestions } from '@jsprismarine/brigadier';
 import CommandParameter, { CommandParameterFlags, CommandParameterType } from '../network/type/CommandParameter';
 
-import CommandEnum from '../network/type/CommandEnum';
-import Gamemode from '../world/Gamemode';
+import { Vector3 } from '@jsprismarine/math';
+import { getGametypeId, getGametypeName } from '@jsprismarine/minecraft';
+import type Player from '../Player';
+import type Server from '../Server';
+import { CommandEnum } from '../network/type/CommandEnum';
 import ParseTargetSelector from '../utils/ParseTargetSelector';
 import ParseTildeCaretNotation from '../utils/ParseTildeCaretNotation';
-import Player from '../player/Player';
-import { Server } from '../Prismarine';
-import Vector3 from '../math/Vector3';
 
 export abstract class CommandArgument {
     public getReadableType(): string {
         return '';
     }
-    public getParameters(): Set<CommandParameter> {
+    // eslint-disable-next-line unused-imports/no-unused-vars
+    public getParameters(server: Server): Set<CommandParameter> | undefined {
         return new Set();
     }
 }
@@ -27,19 +27,16 @@ export class CommandArgumentGamemode implements CommandArgument {
     private postfix: string | null;
 
     public constructor(data?: { name?: string; optional?: boolean; flags?: CommandParameterFlags; postfix?: string }) {
-        this.name = data?.name || 'gameMode';
-        this.optional = data?.optional || false;
-        this.flags = data?.flags || CommandParameterFlags.NONE;
-        this.postfix = data?.postfix || null;
+        this.name = data?.name ?? 'gameMode';
+        this.optional = data?.optional ?? false;
+        this.flags = data?.flags ?? CommandParameterFlags.NONE;
+        this.postfix = data?.postfix ?? null;
     }
 
-    public parse(reader: StringReader, context: CommandContext<Player>) {
-        const gm = reader.readString();
-
-        Gamemode.getGamemodeId(gm);
-        return gm;
+    public parse(reader: StringReader, _context: CommandContext<Player>) {
+        return getGametypeName(getGametypeId(reader.readString()));
     }
-    public async listSuggestions(context: any, builder: any) {
+    public async listSuggestions(_context: any, _builder: any) {
         // TODO
         return Suggestions.empty();
     }
@@ -53,10 +50,10 @@ export class CommandArgumentGamemode implements CommandArgument {
 
     public getParameters(): Set<CommandParameter> {
         const gameModeEnum = new CommandEnum();
-        gameModeEnum.enumName = 'GameMode';
+        gameModeEnum.name = 'GameMode';
 
         // TODO: this should be dynamic
-        gameModeEnum.enumValues = ['survival', 'creative', 'adventure', 'spectator'];
+        gameModeEnum.values = ['survival', 'creative', 'adventure', 'spectator'];
         return new Set([
             new CommandParameter({
                 paramName: this.name,
@@ -76,17 +73,15 @@ export class CommandArgumentMob implements CommandArgument {
     private postfix: string | null;
 
     public constructor(data?: { name?: string; optional?: boolean; flags?: CommandParameterFlags; postfix?: string }) {
-        this.name = data?.name || 'entityType';
-        this.optional = data?.optional || false;
-        this.flags = data?.flags || CommandParameterFlags.NONE;
-        this.postfix = data?.postfix || null;
+        this.name = data?.name ?? 'entityType';
+        this.optional = data?.optional ?? false;
+        this.flags = data?.flags ?? CommandParameterFlags.NONE;
+        this.postfix = data?.postfix ?? null;
     }
 
-    public parse(reader: StringReader, context: CommandContext<Player>) {
+    public parse(reader: StringReader, _context: CommandContext<Player>) {
         let str = '';
-        while (true) {
-            if (!reader.canRead()) break;
-
+        while (reader.canRead()) {
             const pos = reader.getCursor();
             const char = reader.read();
             if (char === ' ') {
@@ -99,7 +94,7 @@ export class CommandArgumentMob implements CommandArgument {
 
         return str;
     }
-    public async listSuggestions(context: any, builder: any) {
+    public async listSuggestions(_context: any, _builder: any) {
         // TODO
         return Suggestions.empty();
     }
@@ -113,8 +108,8 @@ export class CommandArgumentMob implements CommandArgument {
 
     public getParameters(): Set<CommandParameter> {
         const entityTypeEnum = new CommandEnum();
-        entityTypeEnum.enumName = 'EntityType';
-        entityTypeEnum.enumValues = Object.entries(Entities).map(([, entity]) => entity.MOB_ID);
+        entityTypeEnum.name = 'EntityType';
+        entityTypeEnum.values = []; //Object.entries(Entities).map(([, entity]) => entity.MOB_ID);
         return new Set([
             new CommandParameter({
                 paramName: this.name,
@@ -134,17 +129,15 @@ export class CommandArgumentEntity implements CommandArgument {
     private postfix: string | null;
 
     public constructor(data?: { name?: string; optional?: boolean; flags?: CommandParameterFlags; postfix?: string }) {
-        this.name = data?.name || 'target';
-        this.optional = data?.optional || false;
-        this.flags = data?.flags || CommandParameterFlags.NONE;
-        this.postfix = data?.postfix || null;
+        this.name = data?.name ?? 'target';
+        this.optional = data?.optional ?? false;
+        this.flags = data?.flags ?? CommandParameterFlags.NONE;
+        this.postfix = data?.postfix ?? null;
     }
 
     public parse(reader: StringReader, context: CommandContext<Player>) {
         let player = '';
-        while (true) {
-            if (!reader.canRead()) break;
-
+        while (reader.canRead()) {
             const pos = reader.getCursor();
             const char = reader.read();
             if (char === ' ') {
@@ -162,12 +155,12 @@ export class CommandArgumentEntity implements CommandArgument {
                     source: context.getSource(),
                     entities: context.getSource().getWorld().getEntities()
                 });
-            } catch (error) {
-                if (!error.message.includes('no results')) throw error;
+            } catch (error: unknown) {
+                if (!(error as any).message.includes('no results')) throw error;
                 return [];
             }
 
-        return [context.getSource().getServer().getPlayerManager().getPlayerByName(player)];
+        return [context.getSource().getServer().getSessionManager().getPlayerByExactName(player)]; // TODO: by name not exact
     }
 
     public getReadableType(): string {
@@ -194,19 +187,17 @@ export class CommandArgumentPosition extends Vector3 implements CommandArgument 
     private postfix: string | null;
 
     public constructor(data?: { name?: string; optional?: boolean; flags?: CommandParameterFlags; postfix?: string }) {
-        super();
-        this.name = data?.name || 'position';
-        this.optional = data?.optional || false;
-        this.flags = data?.flags || CommandParameterFlags.NONE;
-        this.postfix = data?.postfix || null;
+        super(0, 0, 0);
+        this.name = data?.name ?? 'position';
+        this.optional = data?.optional ?? false;
+        this.flags = data?.flags ?? CommandParameterFlags.NONE;
+        this.postfix = data?.postfix ?? null;
     }
 
     public parse(reader: StringReader, context: CommandContext<Player>) {
         const getPos = () => {
             let pos = '';
-            while (true) {
-                if (!reader.canRead()) break;
-
+            while (reader.canRead()) {
                 const cursor = reader.getCursor();
                 const char = reader.read();
                 if (char === ' ') {
@@ -269,13 +260,13 @@ export class CommandArgumentCommand implements CommandArgument {
     private postfix: string | null;
 
     public constructor(data?: { name?: string; optional?: boolean; flags?: CommandParameterFlags; postfix?: string }) {
-        this.name = data?.name || 'command';
-        this.optional = data?.optional || false;
-        this.flags = data?.flags || CommandParameterFlags.NONE;
-        this.postfix = data?.postfix || null;
+        this.name = data?.name ?? 'command';
+        this.optional = data?.optional ?? false;
+        this.flags = data?.flags ?? CommandParameterFlags.NONE;
+        this.postfix = data?.postfix ?? null;
     }
 
-    public parse(reader: StringReader, context: CommandContext<Player>) {
+    public parse(reader: StringReader, _context: CommandContext<Player>) {
         const command = reader.readString();
 
         return command;
@@ -305,13 +296,13 @@ export class BooleanArgumentCommand implements CommandArgument {
     private postfix: string | null;
 
     public constructor(data?: { name?: string; optional?: boolean; flags?: CommandParameterFlags; postfix?: string }) {
-        this.name = data?.name || 'boolean';
-        this.optional = data?.optional || false;
-        this.flags = data?.flags || CommandParameterFlags.NONE;
-        this.postfix = data?.postfix || null;
+        this.name = data?.name ?? 'boolean';
+        this.optional = data?.optional ?? false;
+        this.flags = data?.flags ?? CommandParameterFlags.NONE;
+        this.postfix = data?.postfix ?? null;
     }
 
-    public parse(reader: StringReader, context: CommandContext<Player>) {
+    public parse(reader: StringReader, _context: CommandContext<Player>) {
         const boolean = reader.readString();
 
         if (boolean === 'true') return true;
@@ -325,8 +316,8 @@ export class BooleanArgumentCommand implements CommandArgument {
 
     public getParameters(): Set<CommandParameter> {
         const booleanEnum = new CommandEnum();
-        booleanEnum.enumName = 'Boolean';
-        booleanEnum.enumValues = ['true', 'false'];
+        booleanEnum.name = 'Boolean';
+        booleanEnum.values = ['true', 'false'];
         return new Set([
             new CommandParameter({
                 paramName: this.name,
@@ -346,13 +337,13 @@ export class PlayerArgumentCommand implements CommandArgument {
     private postfix: string | null;
 
     public constructor(data?: { name?: string; optional?: boolean; flags?: CommandParameterFlags; postfix?: string }) {
-        this.name = data?.name || 'player';
-        this.optional = data?.optional || false;
-        this.flags = data?.flags || CommandParameterFlags.NONE;
-        this.postfix = data?.postfix || null;
+        this.name = data?.name ?? 'player';
+        this.optional = data?.optional ?? false;
+        this.flags = data?.flags ?? CommandParameterFlags.NONE;
+        this.postfix = data?.postfix ?? null;
     }
 
-    public parse(reader: StringReader, context: CommandContext<Player>) {
+    public parse(reader: StringReader, _context: CommandContext<Player>) {
         const player = reader.readString();
         return player;
     }
@@ -361,16 +352,16 @@ export class PlayerArgumentCommand implements CommandArgument {
         return this.name;
     }
 
-    public getParameters(): Set<CommandParameter> {
+    public getParameters(server: Server): Set<CommandParameter> {
         const playerEnum = new CommandEnum();
-        playerEnum.enumName = 'Player';
+        playerEnum.name = 'Player';
         try {
-            playerEnum.enumValues = Server.instance
-                .getPlayerManager()
-                .getOnlinePlayers()
+            playerEnum.values = server
+                .getSessionManager()
+                .getAllPlayers()
                 .map((player) => player.getName());
         } catch {
-            playerEnum.enumValues = [];
+            playerEnum.values = [];
         }
 
         return new Set([

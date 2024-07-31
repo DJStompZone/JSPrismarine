@@ -1,11 +1,10 @@
-import DataPacket from './DataPacket';
 import Identifiers from '../Identifiers';
+import { NetworkUtil } from '../NetworkUtil';
 import TextType from '../type/TextType';
+import DataPacket from './DataPacket';
 
 /**
  * Packet for chat messages, announcements etc.
- *
- * @public
  */
 export default class TextPacket extends DataPacket {
     public static NetID = Identifiers.TextPacket;
@@ -25,31 +24,35 @@ export default class TextPacket extends DataPacket {
     public parameters: string[] = [];
     public xuid!: string;
     public platformChatId!: string;
+    public filtered!: string;
 
-    public decodePayload() {
+    public decodePayload(): void {
         this.type = this.readByte();
-        this.needsTranslation = this.readBool();
+        this.needsTranslation = this.readBoolean();
 
         switch (this.type) {
             case TextType.Chat:
             case TextType.Whisper:
             case TextType.Announcement:
-                this.sourceName = this.readString();
+                this.sourceName = NetworkUtil.readString(this);
+                this.message = NetworkUtil.readString(this);
+                break;
+
             case TextType.Raw:
             case TextType.Tip:
             case TextType.System:
             case TextType.JsonWhisper:
             case TextType.Json:
-                this.message = this.readString();
+                this.message = NetworkUtil.readString(this);
                 break;
 
             case TextType.Translation:
             case TextType.Popup:
             case TextType.JukeboxPopup:
-                this.message = this.readString();
+                this.message = NetworkUtil.readString(this);
                 const count = this.readUnsignedVarInt();
                 for (let i = 0; i < count; i++) {
-                    this.parameters.push(this.readString());
+                    this.parameters.push(NetworkUtil.readString(this));
                 }
 
                 break;
@@ -58,34 +61,35 @@ export default class TextPacket extends DataPacket {
                 throw new Error('Invalid TextType');
         }
 
-        this.xuid = this.readString();
-        this.platformChatId = this.readString();
+        this.xuid = NetworkUtil.readString(this);
+        this.platformChatId = NetworkUtil.readString(this);
+        this.filtered = NetworkUtil.readString(this);
     }
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeByte(this.type);
-        this.writeBool(this.needsTranslation);
+        this.writeBoolean(this.needsTranslation);
 
         switch (this.type) {
             case TextType.Chat:
             case TextType.Whisper:
             case TextType.Announcement:
-                this.writeString(this.sourceName);
+                NetworkUtil.writeString(this, this.sourceName);
             case TextType.Raw:
             case TextType.Tip:
             case TextType.System:
             case TextType.JsonWhisper:
             case TextType.Json:
-                this.writeString(this.message);
+                NetworkUtil.writeString(this, this.message);
                 break;
 
             case TextType.Translation:
             case TextType.Popup:
             case TextType.JukeboxPopup:
-                this.writeString(this.message);
+                NetworkUtil.writeString(this, this.message);
                 this.writeUnsignedVarInt(this.parameters.length);
                 for (const parameter of this.parameters) {
-                    this.writeString(parameter);
+                    NetworkUtil.writeString(this, parameter);
                 }
 
                 break;
@@ -93,7 +97,8 @@ export default class TextPacket extends DataPacket {
                 throw new Error('Invalid TextType');
         }
 
-        this.writeString(this.xuid);
-        this.writeString(this.platformChatId);
+        NetworkUtil.writeString(this, this.xuid);
+        NetworkUtil.writeString(this, this.platformChatId);
+        NetworkUtil.writeString(this, this.filtered);
     }
 }

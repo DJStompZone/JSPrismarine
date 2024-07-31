@@ -1,6 +1,6 @@
-import DataPacket from './DataPacket';
+import { Vector3 } from '@jsprismarine/math';
 import Identifiers from '../Identifiers';
-import Vector3 from '../../math/Vector3';
+import DataPacket from './DataPacket';
 
 export default class ContainerOpenPacket extends DataPacket {
     public static NetID = Identifiers.ContainerOpenPacket;
@@ -10,7 +10,7 @@ export default class ContainerOpenPacket extends DataPacket {
     public containerPos!: Vector3;
     public containerEntityId!: bigint;
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeByte(this.windowId);
         this.writeByte(this.containerType);
 
@@ -21,7 +21,7 @@ export default class ContainerOpenPacket extends DataPacket {
         this.writeVarLong(this.containerEntityId);
     }
 
-    public decodePayload() {
+    public decodePayload(): void {
         this.windowId = this.readByte();
         this.containerType = this.readByte();
 

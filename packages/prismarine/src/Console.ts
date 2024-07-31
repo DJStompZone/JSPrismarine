@@ -1,77 +1,123 @@
-import Chat from './chat/Chat';
-import ChatEvent from './events/chat/ChatEvent';
-import type Entity from './entity/Entity';
-import type Server from './Server';
-import Vector3 from './math/Vector3';
-import readline from 'readline';
+import { Vector3 } from '@jsprismarine/math';
+import type { Server, Service } from './';
+import { EntityLike } from './entity/';
+import type ChatEvent from './events/chat/ChatEvent';
 
-export default class Console {
-    private readonly server: Server;
-    private cli: readline.Interface;
-    public runtimeId = BigInt(-1);
+import type { CompleterResult } from 'node:readline';
+import readline from 'node:readline';
 
-    public constructor(server: Server) {
-        this.server = server;
-
-        // Console command reader
-        readline.emitKeypressEvents(process.stdin);
-        process.stdin.setEncoding('utf8');
-
-        try {
-            if (process.stdin.isTTY) process.stdin.setRawMode(true);
-        } catch (error) {
-            this.server.getLogger()?.warn(`Failed to enable stdin rawMode: ${error}!`);
-            this.server.getLogger()?.debug(error.stack);
-        }
-
-        const completer = (line: string) => {
-            const hits = Array.from(this.getServer().getCommandManager().getCommands().values())
-                .filter((a) => a.id.split(':')[1].startsWith(line.replace('/', '')))
-                .map((a) => '/' + a.id.split(':')[1]);
-            return [
-                hits.length
-                    ? hits
-                    : Array.from(this.getServer().getCommandManager().getCommands().values()).map(
-                          (a) => '/' + a.id.split(':')[1]
-                      ),
-                line
-            ];
+// Extend builtin `readline.Interface` type
+declare module 'node:readline' {
+    interface Interface {
+        setRawMode?(mode: boolean): void;
+        output: {
+            write: (data: string) => void;
         };
+        input: any;
+        _refreshLine?(): void;
+    }
+}
+
+/**
+ * Server console.
+ */
+export default class Console extends EntityLike implements Service {
+    private cli?: readline.Interface;
+
+    public constructor(server: Server, runtimeId = BigInt(-1)) {
+        const world = server.getWorldManager().getDefaultWorld()!;
+        super({
+            server,
+            runtimeId,
+            world
+        });
+    }
+
+    /**
+     * On enable hook.
+     * @group Lifecycle
+     */
+    public async enable(): Promise<void> {
+        process.stdin.setRawMode(true);
 
         this.cli = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
             terminal: true,
-            prompt: '',
+            prompt: '> ',
+            tabSize: 4,
             crlfDelay: Number.POSITIVE_INFINITY,
             escapeCodeTimeout: 1500,
-            completer: process.stdin.isTTY ? completer : undefined
+            removeHistoryDuplicates: true,
+            completer: this.complete.bind(this)
+        });
+
+        this.server.on('chat', async (evt: ChatEvent) => {
+            if (evt.isCancelled()) return;
+            await this.sendMessage(evt.getChat().getMessage());
+        });
+        this.server.getLogger().setConsole(this);
+
+        this.cli.on('keypress', async (_, key) => {
+            switch (key.name) {
+                case 'c': {
+                    if (key.ctrl) {
+                        await this.server.shutdown();
+                    }
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
         });
 
         this.cli.on('line', (input: string) => {
-            if (input.startsWith('/')) {
-                void this.getServer()
-                    .getCommandManager()
-                    .dispatchCommand(this as any, this as any, input.slice(1));
-                return;
-            }
+            if (input.trim() === '') return;
 
-            const event = new ChatEvent(new Chat(this, `${this.getFormattedUsername()} ${input}`));
-            void this.getServer().getEventManager().emit('chat', event);
+            // Fix cursor positioning.
+            this.cli?.output.write(`\x1b[2D`);
+
+            void this.server.getCommandManager().dispatchCommand(this as any, this as any, input);
         });
 
-        server.getEventManager().on('chat', async (evt: ChatEvent) => {
-            if (evt.cancelled) return;
-            await this.sendMessage(evt.getChat().getMessage());
-        });
+        this.cli.on('close', async () => await this.server.shutdown());
     }
 
-    public getRuntimeId(): bigint {
-        return this.runtimeId;
+    /**
+     * On disable hook.
+     * @group Lifecycle
+     */
+    public async disable(): Promise<void> {
+        /*this.cli?.removeAllListeners();
+        this.cli?.close();*/
     }
 
-    public async onDisable(): Promise<void> {
-        this.cli.close();
+    private async complete(line: string, callback: (err?: null | Error, result?: CompleterResult) => void) {
+        const commands = Array.from(this.server.getCommandManager().getCommands().values()).map(
+            (command) => `/${command.name}`
+        );
+
+        // Merge and remove duplicates.
+        const completions = ['/', ...commands]
+            .reverse() // Reverse to remove duplicates at the end.
+            .filter((value, index, self) => self.indexOf(value) === index)
+            .reverse(); // Restore.
+
+        // TODO: Handle arguments.
+        const hits = completions.filter((c) => c.startsWith(line));
+        return callback(null, [hits.length ? hits : completions, line]);
+    }
+
+    public write(line: string): void {
+        // Remove the prompt that's prefixed when logging.
+        this.cli?.output.write(`\x1b[${this.cli.getPrompt().length}D`);
+
+        // Write the line.
+        this.cli?.output.write(`\r${line}\n\r`);
+
+        this.cli?._refreshLine?.();
+        this.cli?.prompt();
     }
 
     public getName(): string {
@@ -83,15 +129,11 @@ export default class Console {
     }
 
     public async sendMessage(message: string): Promise<void> {
-        this.getServer().getLogger()?.info(message, 'Console');
+        this.server.getLogger().info(message);
     }
 
     public getWorld() {
-        return this.server.getWorldManager().getDefaultWorld();
-    }
-
-    public getServer(): Server {
-        return this.server;
+        return this.server.getWorldManager().getDefaultWorld()!;
     }
 
     public isPlayer(): boolean {
@@ -113,7 +155,7 @@ export default class Console {
     }
 
     public getPosition(): Vector3 {
-        return new Vector3();
+        return new Vector3(0, 0, 0);
     }
 
     public getType() {
@@ -122,30 +164,5 @@ export default class Console {
 
     public isConsole(): boolean {
         return true;
-    }
-
-    /**
-     * Returns the nearest entity from the current entity
-     *
-     * TODO: Customizable radius
-     * TODO: Generic?
-     */
-    public getNearestEntity(entities: Entity[] = this.server.getWorldManager().getDefaultWorld().getEntities()!) {
-        const pos = new Vector3(this.getX(), this.getY(), this.getZ());
-        const dist = (a: Vector3, b: Vector3) =>
-            Math.sqrt((b.getX() - a.getX()) ** 2 + (b.getY() - a.getY()) ** 2 + (b.getZ() - a.getZ()) ** 2);
-
-        const closest = (target: Vector3, points: Entity[], eps = 0.00001) => {
-            const distances = points.map((e) => dist(target, new Vector3(e.getX(), e.getY(), e.getZ())));
-            const closest = Math.min(...distances);
-            return points.find((e, i) => distances[i] - closest < eps)!;
-        };
-
-        return [
-            closest(
-                pos,
-                entities.filter((a) => a.getRuntimeId() !== this.getRuntimeId())
-            )
-        ].filter((a) => a);
     }
 }

@@ -1,16 +1,19 @@
+import type { PlayerSession } from '../../';
+import type Server from '../../Server';
 import Identifiers from '../Identifiers';
 import type LevelSoundEventPacket from '../packet/LevelSoundEventPacket';
-import PacketHandler from './PacketHandler';
-import type Player from '../../player/Player';
-import type Server from '../../Server';
+import type PacketHandler from './PacketHandler';
 
 export default class LevelSoundEventHandler implements PacketHandler<LevelSoundEventPacket> {
     public static NetID = Identifiers.LevelSoundEventPacket;
 
-    public async handle(packet: LevelSoundEventPacket, server: Server, player: Player): Promise<void> {
-        // TODO: broadcast to viewers
-        for (const chunkPlayer of player.getPlayersInChunk()) {
-            await chunkPlayer.getConnection().sendDataPacket(packet);
-        }
+    public async handle(packet: LevelSoundEventPacket, _server: Server, session: PlayerSession): Promise<void> {
+        await Promise.all(
+            session
+                .getPlayer()
+                .getWorld()
+                .getPlayers()
+                .map((target) => target.getNetworkSession().send(packet))
+        );
     }
 }

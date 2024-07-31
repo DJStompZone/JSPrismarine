@@ -1,20 +1,18 @@
-import { Connection } from '@jsprismarine/raknet';
-import Event from '../Event';
+import { Event } from '../Event';
+import type { RakNetSession } from '@jsprismarine/raknet';
 
 /**
  * Fired just as a new client connects to the raknet server instance.
- *
- * @public
  */
 export default class RaknetConnectEvent extends Event {
-    private readonly connection: Connection;
+    private readonly session: RakNetSession;
 
-    public constructor(connection: Connection) {
+    public constructor(session: RakNetSession) {
         super();
-        this.connection = connection;
+        this.session = session;
     }
 
-    public getConnection(): Connection {
-        return this.connection;
+    public getRakNetSession(): RakNetSession {
+        return this.session;
     }
 }

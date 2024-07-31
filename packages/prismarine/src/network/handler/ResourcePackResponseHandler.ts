@@ -1,110 +1,159 @@
-import Chat, { ChatType } from '../../chat/Chat';
+import { Chat, ChatType } from '../../chat/Chat';
+import RespawnPacket, { RespawnState } from '../packet/RespawnPacket';
+import SetSpawnPositionPacket, { SpawnType } from '../packet/SetSpawnPositionPacket';
 
+import { getGametypeId } from '@jsprismarine/minecraft';
+import type { PlayerSession } from '../../';
+import type Server from '../../Server';
+import ChatEvent from '../../events/chat/ChatEvent';
+import PlayerSpawnEvent from '../../events/player/PlayerSpawnEvent';
+import Identifiers from '../Identifiers';
 import AvailableActorIdentifiersPacket from '../packet/AvailableActorIdentifiersPacket';
 import BiomeDefinitionListPacket from '../packet/BiomeDefinitionListPacket';
-import ChatEvent from '../../events/chat/ChatEvent';
-import Gamemode from '../../world/Gamemode';
-import Identifiers from '../Identifiers';
-import PacketHandler from './PacketHandler';
-import type Player from '../../player/Player';
-import PlayerSpawnEvent from '../../events/player/PlayerSpawnEvent';
+import ItemComponentPacket from '../packet/ItemComponentPacket';
 import type ResourcePackResponsePacket from '../packet/ResourcePackResponsePacket';
 import ResourcePackStackPacket from '../packet/ResourcePackStackPacket';
-import ResourcePackStatusType from '../type/ResourcePackStatusType';
-import type Server from '../../Server';
 import StartGamePacket from '../packet/StartGamePacket';
-import UpdateSoftEnumPacket from '../packet/UpdateSoftEnumPacket';
-import Vector3 from '../../math/Vector3';
+import PlayStatusType from '../type/PlayStatusType';
+import ResourcePackStatusType from '../type/ResourcePackStatusType';
+import type PacketHandler from './PacketHandler';
 
 export default class ResourcePackResponseHandler implements PacketHandler<ResourcePackResponsePacket> {
     public static NetID = Identifiers.ResourcePackResponsePacket;
 
-    public async handle(packet: ResourcePackResponsePacket, server: Server, player: Player): Promise<void> {
+    public async handle(packet: ResourcePackResponsePacket, server: Server, session: PlayerSession): Promise<void> {
         if (packet.status === ResourcePackStatusType.HaveAllPacks) {
-            const pk = new ResourcePackStackPacket();
-            pk.experimentsAlreadyEnabled = false;
-            await player.getConnection().sendDataPacket(pk);
+            const resourcePackStack = new ResourcePackStackPacket();
+            resourcePackStack.texturePackRequired = false;
+            resourcePackStack.experimentsAlreadyEnabled = false;
+            await session.getConnection().sendDataPacket(resourcePackStack);
         } else if (packet.status === ResourcePackStatusType.Completed) {
-            // Emit playerSpawn event
-            const spawnEvent = new PlayerSpawnEvent(player);
-            server.getEventManager().post(['playerSpawn', spawnEvent]);
-            if (spawnEvent.cancelled) return;
-
-            const world = player.getWorld();
-
-            const pk = new StartGamePacket();
-            pk.entityId = player.getRuntimeId();
-            pk.runtimeEntityId = player.getRuntimeId();
-            pk.gamemode = player.gamemode;
-            pk.defaultGamemode = Gamemode.getGamemodeId(server.getConfig().getGamemode());
-
-            const worldSpawnPos = await world.getSpawnPosition();
-            pk.worldSpawnPos = worldSpawnPos;
-
-            pk.playerPos = new Vector3(player.getX(), player.getY(), player.getZ());
-            pk.pith = player.pitch;
-            pk.pith = player.yaw;
-
-            pk.levelId = world.getUniqueId();
-            pk.worldName = world.getName();
-            pk.seed = world.getSeed();
-            pk.gamerules = world.getGameruleManager();
-            await player.getConnection().sendDataPacket(pk);
-            await player.getConnection().sendTime(world.getTicks());
-            await player.getConnection().sendDataPacket(new AvailableActorIdentifiersPacket());
-
-            await player.getConnection().sendDataPacket(new BiomeDefinitionListPacket());
-
-            await player.getConnection().sendAttributes(player.getAttributeManager().getDefaults());
-
+            const player = session.getPlayer();
             server
                 .getLogger()
-                ?.info(
-                    `§b${player.getName()}§f is attempting to join with id §b${player.getRuntimeId()}§f from ${player
+                .info(
+                    `§b${player.getName()}§f is attempting to join with id §b${player.getUUID()}§f (§b${player.getRuntimeId()}§f) from ${player
                         .getAddress()
-                        .getAddress()}:${player.getAddress().getPort()}`,
-                    'Handler/ResourcePackResponseHandler'
+                        .getAddress()}:${player.getAddress().getPort()}`
                 );
 
-            player.setNameTag(player.getName());
-            // TODO: always visible nametag
-            await player.getConnection().sendMetadata();
-            await player.getConnection().sendAvailableCommands();
-            await player.getConnection().sendInventory();
+            // Emit playerSpawn event
+            const spawnEvent = new PlayerSpawnEvent(player);
+            server.post(['playerSpawn', spawnEvent]);
+            if (spawnEvent.isCancelled()) return;
 
-            await player.getConnection().sendCreativeContents();
+            // TODO: send inventory slots
+            const world = player.getWorld();
 
-            // First add
-            await player.getConnection().addToPlayerList();
-            // Then retrieve other players
-            if (server.getPlayerManager().getOnlinePlayers().length > 1) {
-                await player.getConnection().sendPlayerList();
-            }
+            await session.addToPlayerList();
+            await session.sendTime(world.getTicks());
+
+            const startGame = new StartGamePacket();
+            startGame.entityId = player.getRuntimeId();
+            startGame.runtimeEntityId = player.getRuntimeId();
+            startGame.gamemode = player.gamemode;
+            startGame.defaultGamemode = getGametypeId(server.getConfig().getGamemode());
+
+            const worldSpawnPos = await world.getSpawnPosition();
+            startGame.worldSpawnPos = worldSpawnPos;
+
+            startGame.playerPos = player.getPosition();
+            startGame.pitch = player.pitch;
+            startGame.yaw = player.yaw;
+
+            startGame.serverIdentifier = 'JSPrismarine';
+            startGame.worldIdentifier = world.getName();
+            startGame.scenarioIdentifier = 'JSPrismarine';
+            startGame.levelId = world.getUUID();
+            startGame.ticks = server.getTick();
+            startGame.time = world.getTicks();
+            startGame.worldName = world.getName();
+            startGame.seed = world.getSeed();
+            startGame.gamerules = world.getGameruleManager();
+            await session.getConnection().sendDataPacket(startGame);
+
+            const itemComponent = new ItemComponentPacket();
+            await session.getConnection().sendDataPacket(itemComponent);
+
+            const setSpawnPos = new SetSpawnPositionPacket();
+            setSpawnPos.dimension = 0; // TODO: enum
+            setSpawnPos.position = await world.getSpawnPosition();
+            setSpawnPos.blockPosition = setSpawnPos.position;
+            setSpawnPos.type = SpawnType.PLAYER_SPAWN;
+            await session.getConnection().sendDataPacket(setSpawnPos);
+
+            await session.sendTime(world.getTicks());
+
+            // TODO: set difficulty packet
+            // TODO: set commands enabled packet
+
+            await session.sendSettings();
+            await session.sendAvailableCommands();
+
+            // TODO: game rules changed packet
+
+            await session.sendPlayerList();
+
+            await session.getConnection().sendDataPacket(new BiomeDefinitionListPacket());
+            await session.getConnection().sendDataPacket(new AvailableActorIdentifiersPacket());
+
+            // TODO: player fog packet
+
+            await session.sendAttributes();
+            await session.sendMetadata();
+            await session.sendAbilities();
+            await session.sendCreativeContents();
+
+            // Some packets...
+
+            // TODO: inventory crafting data
+
+            // TODO: available commands
+
+            const respawnPacket = new RespawnPacket();
+            respawnPacket.state = RespawnState.SERVER_SEARCHING_FOR_SPAWN;
+            respawnPacket.position = player.getPosition();
+            respawnPacket.runtimeEntityId = player.getRuntimeId();
+            await session.getConnection().sendDataPacket(respawnPacket);
+
+            respawnPacket.state = RespawnState.SERVER_READY_TO_SPAWN;
+            await session.getConnection().sendDataPacket(respawnPacket);
+            respawnPacket.state = RespawnState.CLIENT_READY_TO_SPAWN;
+            await session.getConnection().sendDataPacket(respawnPacket);
+
+            // Sent to let know the client saved chunks
+            await session.getPlayer().sendSpawn();
+            await session.getPlayer().sendInitialSpawnChunks();
+            await session.sendPlayStatus(PlayStatusType.PlayerSpawn);
+
+            // Summon player(s) & entities
+            await Promise.all([
+                server
+                    .getSessionManager()
+                    .getAllPlayers()
+                    .filter((p) => p !== player)
+                    .map(async (p) => {
+                        await p.getNetworkSession().sendSpawn(player);
+                        await session.sendSpawn(p);
+                    }),
+                player
+                    .getWorld()
+                    .getEntities()
+                    .filter((e) => !e.isPlayer())
+                    .map(async (entity) => entity.sendSpawn(player))
+            ]);
 
             // Announce connection
             const chatSpawnEvent = new ChatEvent(
-                new Chat(
-                    server.getConsole(),
-                    `§e${player.getName()} joined the game`,
-                    '*.everyone',
-                    ChatType.Announcement
-                )
+                new Chat({
+                    sender: server.getConsole(),
+                    message: `§e%multiplayer.player.joined`,
+                    parameters: [player.getName()],
+                    needsTranslation: true,
+                    type: ChatType.TRANSLATION
+                })
             );
-            await server.getEventManager().emit('chat', chatSpawnEvent);
-
-            // Update soft commandenums
-            const packet = new UpdateSoftEnumPacket();
-            packet.enumName = 'Player';
-            packet.values = server
-                .getPlayerManager()
-                .getOnlinePlayers()
-                .map((player) => player.getName());
-            packet.type = packet.TYPE_SET;
-
-            server
-                .getPlayerManager()
-                .getOnlinePlayers()
-                .forEach(async (player) => player.getConnection().sendDataPacket(pk));
+            await server.emit('chat', chatSpawnEvent);
         }
     }
 }

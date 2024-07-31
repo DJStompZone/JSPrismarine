@@ -57,8 +57,7 @@ import StonePickaxe from './items/StonePickaxe';
 import StoneShovel from './items/StoneShovel';
 import StoneSword from './items/StoneSword';
 import Trident from './items/Trident';
-import TurtleHelmet from './items/TurtleHelmet';
-import WarpedFunghusOnStick from './items/WarpedFunghusOnStick';
+import WarpedFungusOnStick from './items/WarpedFungusOnStick';
 import WoodenAxe from './items/WoodenAxe';
 import WoodenHoe from './items/WoodenHoe';
 import WoodenPickaxe from './items/WoodenPickaxe';
@@ -125,8 +124,7 @@ export {
     StoneShovel,
     StoneSword,
     Trident,
-    TurtleHelmet,
-    WarpedFunghusOnStick,
+    WarpedFungusOnStick,
     WoodenAxe,
     WoodenHoe,
     WoodenPickaxe,

@@ -1,12 +1,12 @@
 import * as Handlers from './Handlers';
 import * as Packets from './Packets';
 
-import Identifiers from './Identifiers';
-import LoggerBuilder from '../utils/Logger';
-import PacketHandler from './handler/PacketHandler';
-import type Player from '../player/Player';
+import type { PlayerSession } from '../';
 import type Server from '../Server';
 import Timer from '../utils/Timer';
+import Identifiers from './Identifiers';
+import type PacketHandler from './handler/PacketHandler';
+import type PreLoginPacketHandler from './handler/PreLoginPacketHandler';
 
 export default class PacketRegistry {
     private server: Server;
@@ -17,19 +17,27 @@ export default class PacketRegistry {
         this.server = server;
     }
 
-    public async onEnable() {
+    /**
+     * On enable hook.
+     * @group Lifecycle
+     */
+    public async enable(): Promise<void> {
         await this.registerPackets();
         await this.registerHandlers();
     }
 
-    public async onDisable() {
+    /**
+     * On disable hook.
+     * @group Lifecycle
+     */
+    public async disable(): Promise<void> {
         this.handlers.clear();
         this.packets.clear();
     }
 
     /**
      * Register a packet.
-     * @param packet the packet.
+     * @param packet - the packet.
      */
     public registerPacket(packet: typeof Packets.DataPacket): void {
         if (this.packets.has(packet.NetID))
@@ -38,12 +46,12 @@ export default class PacketRegistry {
             );
 
         this.packets.set(packet.NetID, packet);
-        this.server.getLogger()?.debug(`Packet with id §b${packet.name}§r registered`, 'PacketRegistry/registerPacket');
+        this.server.getLogger().debug(`Packet with id §b${packet.name}§r registered`);
     }
 
     /**
      * Get a packet by it's network ID.
-     * @param id the NetID.
+     * @param id - the NetID.
      */
     public getPacket(id: number): any {
         if (!this.packets.has(id)) throw new Error(`Invalid packet with id ${id}!`);
@@ -53,7 +61,7 @@ export default class PacketRegistry {
 
     /**
      * Remove a packet from the registry.
-     * @param id the NetID.
+     * @param id - the NetID.
      */
     public removePacket(id: number): void {
         this.packets.delete(id);
@@ -65,10 +73,10 @@ export default class PacketRegistry {
         this.handlers.set(id, handler);
         this.server
             .getLogger()
-            ?.debug(`Handler with id §b${handler.constructor.name}§r registered`, 'PacketRegistry/registerHandler');
+            .debug(`Handler with id §b${handler.constructor.name}§r registered`, 'PacketRegistry/registerHandler');
     }
 
-    public getHandler(id: number): PacketHandler<any> {
+    public getHandler(id: number): PacketHandler<any> | PreLoginPacketHandler<any> {
         if (!this.handlers.has(id)) throw new Error(`Invalid handler with id ${id.toString(16)}!`);
 
         return this.handlers.get(id)!;
@@ -78,14 +86,14 @@ export default class PacketRegistry {
      * Merge two handlers.
      * This is useful if you want to extend a handler without actually replacing it.
      *
-     * @param handler the first handler, executed first.
-     * @param handler2 the second handler.
+     * @param handler - the first handler, executed first.
+     * @param handler2 - the second handler.
      */
     public appendHandler(handler: PacketHandler<any>, handler2: PacketHandler<any>): PacketHandler<any> {
         const res = new (class Handler {
-            public async handle(packet: any, server: Server, player: Player) {
-                await handler.handle(packet, server, player);
-                await handler2.handle(packet, server, player);
+            public async handle(packet: any, server: Server, session: PlayerSession) {
+                await handler.handle(packet, server, session);
+                await handler2.handle(packet, server, session);
             }
         })();
 
@@ -94,7 +102,7 @@ export default class PacketRegistry {
 
     /**
      * Remove a handler from the registry.
-     * @param id the handler id.
+     * @param id - the handler id.
      */
     public removeHandler(id: number): void {
         this.handlers.delete(id);
@@ -114,11 +122,10 @@ export default class PacketRegistry {
 
         this.server
             .getLogger()
-            ?.verbose(
+            .verbose(
                 `Registered §b${this.packets.size}§r of §b${
                     Array.from(Object.keys(Identifiers)).length - 2
-                }§r packet(s) (took ${timer.stop()} ms)!`,
-                'PacketRegistry/registerPackets'
+                }§r packet(s) (took §e${timer.stop()} ms§r)!`
             );
     }
 
@@ -133,10 +140,7 @@ export default class PacketRegistry {
 
         this.server
             .getLogger()
-            ?.verbose(
-                `Registered §b${this.handlers.size}§r packet handler(s) (took ${timer.stop()} ms)!`,
-                'PacketRegistry/registerHandlers'
-            );
+            .verbose(`Registered §b${this.handlers.size}§r packet handler(s) (took §e${timer.stop()} ms§r)!`);
     }
 
     /**

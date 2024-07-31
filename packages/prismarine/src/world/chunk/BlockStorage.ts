@@ -1,6 +1,7 @@
-import BlockMappings, { LegacyId } from '../../block/BlockMappings';
+import type { LegacyId } from '../../block/BlockMappings';
+import { BlockMappings } from '../../block/BlockMappings';
 
-import BinaryStream from '@jsprismarine/jsbinaryutils';
+import type BinaryStream from '@jsprismarine/jsbinaryutils';
 
 interface BlockStorageData {
     blocks?: number[];
@@ -12,20 +13,20 @@ export default class BlockStorage {
     private palette: number[];
 
     public constructor({ blocks, palette }: BlockStorageData) {
-        this.palette = palette ?? [BlockMappings.getRuntimeId(0, 0)];
-        this.blocks = blocks ?? new Array(4096).fill(0);
+        this.palette = palette ?? [BlockMappings.getRuntimeId('minecraft:air')];
+        this.blocks = blocks ?? Array.from<number>({ length: 4096 }).fill(0);
     }
 
     private static getIndex(bx: number, by: number, bz: number): number {
-        bx &= 0x0f;
-        by &= 0x0f;
-        bz &= 0x0f;
+        bx = bx & 0x0f;
+        bz = bz & 0x0f;
+        by = by & 0x0f;
         return ((bx << 8) + (bz << 4)) | by;
     }
 
     public getBlock(bx: number, by: number, bz: number): LegacyId {
-        const paletteIndex = this.blocks[BlockStorage.getIndex(bx, by, bz)];
-        const runtimeId = this.palette[paletteIndex];
+        const paletteIndex = this.blocks[BlockStorage.getIndex(bx, by, bz)]!;
+        const runtimeId = this.palette[paletteIndex]!;
         return BlockMappings.getLegacyId(runtimeId);
     }
 
@@ -71,12 +72,10 @@ export default class BlockStorage {
         for (let w = 0; w < wordsPerChunk; w++) {
             let word = 0;
             for (let block = 0; block < blocksPerWord; block++) {
-                const state = this.blocks[position];
+                const state = this.blocks[position++]!;
                 word |= state << (bitsPerBlock * block);
-
-                position++;
             }
-            stream.writeLInt(word);
+            stream.writeIntLE(word);
         }
 
         // Write palette entries as runtime ids
@@ -93,7 +92,7 @@ export default class BlockStorage {
 
         const words: number[] = new Array(wordsPerChunk);
         for (let w = 0; w < wordsPerChunk; w++) {
-            words[w] = stream.readLInt();
+            words[w] = stream.readIntLE();
         }
 
         const paletteCount = stream.readVarInt();
@@ -108,7 +107,7 @@ export default class BlockStorage {
         let positon = 0;
         const storage = new BlockStorage({ palette });
         for (let w = 0; w < wordsPerChunk; w++) {
-            const word = words[w];
+            const word = words[w]!;
             for (let block = 0; block < blocksPerWord; block++) {
                 const state = (word >> ((positon % blocksPerWord) * bitsPerBlock)) & ((1 << bitsPerBlock) - 1);
 
@@ -116,11 +115,15 @@ export default class BlockStorage {
                 const y = positon & 0xf;
                 const z = (positon >> 4) & 0xf;
 
-                const translated = palette[state];
+                const translated = palette[state]!;
                 storage.setBlock(x, y, z, translated);
                 positon++;
             }
         }
         return storage;
+    }
+
+    public isEmpty(): boolean {
+        return this.palette.length === 1;
     }
 }

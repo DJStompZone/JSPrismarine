@@ -1,9 +1,9 @@
-/* eslint-disable promise/prefer-await-to-then */
 import { CommandArgumentCommand, CommandArgumentEntity } from '../CommandArguments';
-import { CommandDispatcher, argument, greedyString, literal } from '@jsprismarine/brigadier';
+import type { CommandDispatcher } from '@jsprismarine/brigadier';
+import { argument, greedyString, literal } from '@jsprismarine/brigadier';
 
-import Command from '../Command';
-import type Player from '../../player/Player';
+import { Command } from '../Command';
+import type Player from '../../Player';
 
 export default class ExecuteCommand extends Command {
     public constructor() {

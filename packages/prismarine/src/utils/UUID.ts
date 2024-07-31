@@ -1,6 +1,5 @@
-/* eslint-disable max-params */
-
 import BinaryStream from '@jsprismarine/jsbinaryutils';
+import { randomUUID } from 'node:crypto';
 
 export default class UUID {
     private readonly parts: number[] = [];
@@ -8,7 +7,7 @@ export default class UUID {
 
     public constructor(part1 = 0, part2 = 0, part3 = 0, part4 = 0, version = 4) {
         this.parts = [part1, part2, part3, part4];
-        this.version = version ?? (this.parts[1] & 0xf000) >> 12;
+        this.version = version || (this.parts[1]! & 0xf000) >> 12;
     }
 
     public equals(uuid: UUID): boolean {
@@ -23,7 +22,7 @@ export default class UUID {
     public static fromString(uuid: string, version = 4): UUID {
         if (!uuid) throw new Error('uuid is null or undefined');
 
-        return UUID.fromBinary(Buffer.from(uuid.trim().replace(/-/g, ''), 'hex'), version);
+        return UUID.fromBinary(Buffer.from(uuid.trim().replaceAll('-', ''), 'hex'), version);
     }
 
     /**
@@ -42,11 +41,8 @@ export default class UUID {
      * Generates a random UUIDv4 (string)
      */
     public static randomString(): string {
-        let dt = Date.now();
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            const r = Math.trunc((dt + Math.random() * 16) % 16);
-            dt = Math.floor(dt / 16);
-            return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        return randomUUID({
+            disableEntropyCache: true
         });
     }
 
@@ -55,15 +51,15 @@ export default class UUID {
      */
     public static fromRandom(): UUID {
         const stringUUID = UUID.randomString();
-        return UUID.fromString(stringUUID, 3);
+        return UUID.fromString(stringUUID, 4);
     }
 
     public toBinary(): Buffer {
         const stream = new BinaryStream();
-        stream.writeInt(this.parts[0]);
-        stream.writeInt(this.parts[1]);
-        stream.writeInt(this.parts[2]);
-        stream.writeInt(this.parts[3]);
+        stream.writeInt(this.parts[0]!);
+        stream.writeInt(this.parts[1]!);
+        stream.writeInt(this.parts[2]!);
+        stream.writeInt(this.parts[3]!);
         return stream.getBuffer();
     }
 
@@ -88,18 +84,18 @@ export default class UUID {
         return this.parts;
     }
 
-    public networkSerialize(stream: BinaryStream): void {
-        stream.writeLInt(this.parts[1]);
-        stream.writeLInt(this.parts[0]);
-        stream.writeLInt(this.parts[3]);
-        stream.writeLInt(this.parts[2]);
+    public networkSerialize(stream: any): void {
+        stream.writeIntLE(this.parts[1]);
+        stream.writeIntLE(this.parts[0]);
+        stream.writeIntLE(this.parts[3]);
+        stream.writeIntLE(this.parts[2]);
     }
 
-    public static networkDeserialize(stream: BinaryStream): UUID {
-        const part1 = stream.readLInt();
-        const part0 = stream.readLInt();
-        const part3 = stream.readLInt();
-        const part2 = stream.readLInt();
+    public static networkDeserialize(stream: any): UUID {
+        const part1 = stream.readIntLE();
+        const part0 = stream.readIntLE();
+        const part3 = stream.readIntLE();
+        const part2 = stream.readIntLE();
         return new UUID(part0, part1, part2, part3);
     }
 }

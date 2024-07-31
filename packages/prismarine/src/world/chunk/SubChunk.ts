@@ -1,6 +1,7 @@
-import BinaryStream from '@jsprismarine/jsbinaryutils';
+import type BinaryStream from '@jsprismarine/jsbinaryutils';
+import { Vector3 } from '@jsprismarine/math';
+import type { LegacyId } from '../../block/BlockMappings';
 import BlockStorage from './BlockStorage';
-import { LegacyId } from '../../block/BlockMappings';
 
 export default class SubChunk {
     private storages: Map<number, BlockStorage> = new Map();
@@ -13,7 +14,10 @@ export default class SubChunk {
      * Returns if the SubChunk is all air (basically empty).
      */
     public isEmpty(): boolean {
-        return this.storages.size === 0;
+        for (const storage of this.storages.values()) {
+            if (!storage.isEmpty()) return false;
+        }
+        return true;
     }
 
     private getStorage(index: number): BlockStorage {
@@ -41,8 +45,12 @@ export default class SubChunk {
      * @param bz - block z
      * @param layer - block storage layer
      */
-    public getBlock(bx: number, by: number, bz: number, layer: number): LegacyId {
-        return this.getStorage(layer).getBlock(bx, by & 0xf, bz);
+    public getBlock(bx: Vector3 | number, by: number = 0, bz: number = 0, layer: number = 0): LegacyId {
+        if (bx instanceof Vector3) {
+            return this.getBlock(bx.getX(), bx.getY(), bx.getZ(), layer);
+        }
+
+        return this.getStorage(layer).getBlock(bx, by, bz);
     }
 
     /**
@@ -55,7 +63,7 @@ export default class SubChunk {
      * @param layer - block storage layer
      */
     public setBlock(bx: number, by: number, bz: number, runtimeId: number, layer: number): void {
-        this.getStorage(layer).setBlock(bx, by & 0xf, bz, runtimeId);
+        this.getStorage(layer).setBlock(bx, by, bz, runtimeId);
     }
 
     public networkSerialize(stream: BinaryStream): void {
@@ -71,7 +79,7 @@ export default class SubChunk {
     public static networkDeserialize(stream: BinaryStream): SubChunk {
         const subChunk = new SubChunk();
 
-        const version = stream.readByte();
+        // const version = stream.readByte();
         const layerCount = stream.readByte();
 
         for (let i = 0; i < layerCount; i++) {

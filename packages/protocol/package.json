@@ -1,0 +1,56 @@
+{
+    "name": "@jsprismarine/protocol",
+    "version": "0.6.0",
+    "description": "Protocol package used by JSPrismarine packages",
+    "sideEffects": false,
+    "type": "module",
+    "files": [
+        "dist",
+        "CHANGELOG.md",
+        "README.md"
+    ],
+    "module": "./dist/index.es.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.es.js",
+            "module": "./dist/index.es.js",
+            "require": "./dist/index.cjs.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./*": {
+            "import": "./dist/*.es.js",
+            "module": "./dist/*.es.js",
+            "require": "./dist/*.cjs.js",
+            "types": "./dist/*.d.ts"
+        },
+        "./package.json": "./package.json"
+    },
+    "funding": "https://github.com/sponsors/JSPrismarine",
+    "scripts": {
+        "build": "vite build",
+        "typecheck": "tsc -noEmit"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/JSPrismarine/JSPrismarine.git"
+    },
+    "keywords": [
+        "minecraft-protocol",
+        "protocol"
+    ],
+    "author": "JSPrismarine",
+    "license": "MIT",
+    "homepage": "https://github.com/JSPrismarine/JSPrismarine/tree/master/packages/protocol",
+    "devDependencies": {
+        "@types/node": "20.12.7",
+        "glob": "11.0.0",
+        "typescript": "5.5.2",
+        "vite": "5.3.5",
+        "vitest": "2.0.4"
+    },
+    "dependencies": {
+        "@jsprismarine/nbt": "workspace:*",
+        "@jsprismarine/minecraft": "workspace:*"
+    }
+}

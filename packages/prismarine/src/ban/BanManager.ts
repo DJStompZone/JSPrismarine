@@ -1,53 +1,56 @@
-import type Player from '../player/Player';
-import type Server from '../Server';
-import cwd from '../utils/cwd';
-import fs from 'fs';
+import fs from 'node:fs';
+
 import minifyJson from 'strip-json-comments';
-import path from 'path';
-import util from 'util';
+import type Player from '../Player';
+import type Server from '../Server';
+import { withCwd } from '../utils/cwd';
+
+export type BannedPlayerEntry = {
+    name: string;
+    reason: string | '';
+};
+
+const FILE_NAME = 'banned-players.json';
 
 /**
  * Ban manager.
- *
- * @public
  */
 export default class BanManager {
     private readonly server: Server;
-    private readonly banned: Map<
-        string,
-        {
-            reason: string;
-        }
-    > = new Map();
+    private readonly banned: Map<string, Omit<BannedPlayerEntry, 'name'>> = new Map();
 
     public constructor(server: Server) {
         this.server = server;
     }
 
-    public async onEnable() {
+    /**
+     * On enable hook.
+     * @group Lifecycle
+     */
+    public async enable(): Promise<void> {
         await this.parseBanned();
     }
 
-    public async onDisable() {
+    /**
+     * On disable hook.
+     * @group Lifecycle
+     */
+    public async disable(): Promise<void> {
         this.banned.clear();
     }
 
     private async parseBanned() {
         try {
-            if (!fs.existsSync(path.join(cwd(), '/banned-players.json'))) {
-                this.server.getLogger()?.warn(`Failed to load ban list!`, 'BanManager/parseBanned');
-                fs.writeFileSync(path.join(cwd(), '/banned-players.json'), '[]');
+            const dir = withCwd(FILE_NAME);
+            if (!fs.existsSync(dir)) {
+                this.server.getLogger().warn(`Failed to load ban list!`);
+                fs.writeFileSync(dir, '[]');
             }
 
-            const readFile = util.promisify(fs.readFile);
-            const banned: any[] = JSON.parse(
-                minifyJson((await readFile(path.join(cwd(), '/banned-players.json'))).toString())
-            );
-
+            const banned: BannedPlayerEntry[] = JSON.parse(minifyJson((await fs.promises.readFile(dir)).toString()));
             for (const player of banned) this.banned.set(player.name, player);
-        } catch (error) {
-            this.server.getLogger()?.error(error, 'BanManager/parseBanned');
-            throw new Error(`Invalid banned-players.json file.`);
+        } catch (error: unknown) {
+            this.server.getLogger().error(error);
         }
     }
 
@@ -56,9 +59,8 @@ export default class BanManager {
             reason
         });
 
-        const writeFile = util.promisify(fs.writeFile);
-        await writeFile(
-            path.join(cwd(), '/banned-players.json'),
+        await fs.promises.writeFile(
+            withCwd(FILE_NAME),
             JSON.stringify(
                 Array.from(this.banned).map((entry) => ({
                     name: entry[0],
@@ -74,9 +76,8 @@ export default class BanManager {
     public async setUnbanned(username: string) {
         this.banned.delete(username);
 
-        const writeFile = util.promisify(fs.writeFile);
-        await writeFile(
-            path.join(cwd(), '/banned-players.json'),
+        await fs.promises.writeFile(
+            withCwd(FILE_NAME),
             JSON.stringify(
                 Array.from(this.banned).map((entry) => ({
                     name: entry[0],
@@ -88,8 +89,15 @@ export default class BanManager {
         );
     }
 
-    public isBanned(player: Player) {
-        if (this.banned.has(player.getName())) return this.banned.get(player.getName())?.reason;
+    /**
+     * Check if player is banned.
+     * @param {Player} player - Player to check.
+     * @returns {string | boolean} Reason if banned, false if not banned.
+     */
+    public isBanned(player: Player): string | boolean {
+        if (this.banned.has(player.getName())) {
+            return this.banned.get(player.getName())?.reason || true;
+        }
 
         return false;
     }

@@ -1,0 +1,14 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig.json",
+    "extends": ["../../tsconfig.build.json"],
+    "compilerOptions": {
+        "baseUrl": ".",
+        "outDir": "./dist",
+        "paths": {
+            "@jsprismarine/*": ["../*/src/index.ts"]
+        },
+        "rootDir": "../../",
+        "typeRoots": ["./node_modules/@types", "./src/@types", "./dist/index.d.ts"]
+    },
+    "exclude": ["src/**/*.test.*", "../**/src/**/*.test.*"]
+}

@@ -1,34 +1,24 @@
-import Identifiers from '../Identifiers';
-import PacketHandler from './PacketHandler';
-import type Player from '../../player/Player';
+import type { PlayerSession } from '../../';
 import type Server from '../../Server';
+import Identifiers from '../Identifiers';
 import type SetLocalPlayerAsInitializedPacket from '../packet/SetLocalPlayerAsInitializedPacket';
+import type PacketHandler from './PacketHandler';
 
 export default class SetLocalPlayerAsInitializedHandler implements PacketHandler<SetLocalPlayerAsInitializedPacket> {
     public static NetID = Identifiers.SetLocalPlayerAsInitializedPacket;
 
-    // Login packet must be handled sync, if it takes longer to be handled
-    // uuid may result null here probably... (response to a issue)
-    public async handle(packet: SetLocalPlayerAsInitializedPacket, server: Server, player: Player): Promise<void> {
-        // Summon player(s)
-        await Promise.all(
-            server
-                .getPlayerManager()
-                .getOnlinePlayers()
-                .filter((p) => !(p === player))
-                .map(async (p) => {
-                    await p.getConnection().sendSpawn(player);
-                    await player.getConnection().sendSpawn(p);
-                })
-        );
+    public async handle(
+        _packet: SetLocalPlayerAsInitializedPacket,
+        server: Server,
+        session: PlayerSession
+    ): Promise<void> {
+        const player = session.getPlayer();
+        const world = server.getWorldManager().getDefaultWorld();
 
-        // Summon entities
-        await Promise.all(
-            player
-                .getWorld()
-                .getEntities()
-                .filter((e) => !e.isPlayer())
-                .map(async (entity) => entity.sendSpawn(player))
-        );
+        // Add player to the world.
+        await world.addEntity(player);
+
+        // Send the spawn packets.
+        await player.sendSpawn();
     }
 }

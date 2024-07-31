@@ -1,5 +1,5 @@
-import DataPacket from './DataPacket';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class AnimatePacket extends DataPacket {
     public static NetID = Identifiers.AnimatePacket;
@@ -8,19 +8,19 @@ export default class AnimatePacket extends DataPacket {
     public runtimeEntityId!: bigint;
     public boatRowingTime!: number;
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeVarInt(this.action);
         this.writeUnsignedVarLong(this.runtimeEntityId);
         if ((this.action & 0x80) !== 0) {
-            this.writeLFloat(this.boatRowingTime);
+            this.writeFloatLE(this.boatRowingTime);
         }
     }
 
-    public decodePayload() {
+    public decodePayload(): void {
         this.action = this.readVarInt();
         this.runtimeEntityId = this.readUnsignedVarLong();
         if ((this.action & 0x80) !== 0) {
-            this.boatRowingTime = this.readLFloat();
+            this.boatRowingTime = this.readFloatLE();
         }
     }
 }

@@ -1,5 +1,7 @@
-import ConfigBuilder from './ConfigBuilder';
-import path from 'path';
+import { describe, it, expect } from 'vitest';
+
+import { ConfigBuilder } from './ConfigBuilder';
+import path from 'node:path';
 
 describe('config', () => {
     describe('ConfigBuilder', () => {
@@ -35,12 +37,12 @@ describe('config', () => {
 
         it('should properly handle invalid type', () => {
             try {
-                const config = new ConfigBuilder(path.join(process.cwd(), '.test/', 'config_test.dummy'));
+                void new ConfigBuilder(path.join(process.cwd(), '.test/', 'config_test.dummy'));
 
                 // This should never occur
                 expect(false).toBeTruthy();
-            } catch (error) {
-                expect(error.message.includes('Unsupported config type.')).toBeTruthy();
+            } catch (error: unknown) {
+                expect((error as any).message.includes('Unsupported config type.')).toBeTruthy();
             }
         });
 

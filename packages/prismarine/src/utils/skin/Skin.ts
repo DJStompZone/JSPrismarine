@@ -1,4 +1,5 @@
-import PacketBinaryStream from '../../network/PacketBinaryStream';
+import type BinaryStream from '@jsprismarine/jsbinaryutils';
+import { NetworkUtil } from '../../network/NetworkUtil';
 import SkinAnimation from './SkinAnimation';
 import SkinCape from './SkinCape';
 import SkinImage from './SkinImage';
@@ -78,7 +79,7 @@ export default class Skin {
     public isTrusted = true;
 
     /**
-     * Loads a skin from a JSON file contianing skin data
+     * Loads a skin from a JSON file containing skin data
      * using minecraft bedrock login fields.
      *
      * (loads the skin persona)
@@ -162,64 +163,68 @@ export default class Skin {
         }
 
         // Compute a full id
-        skin.fullId = skin.getCape().getId() + skin.id;
+        skin.fullId = skin.id + skin.getCape().getId();
         return skin;
     }
 
-    public networkSerialize(stream: PacketBinaryStream): void {
-        stream.writeString(this.getId());
-        stream.writeString(this.getPlayFabId());
-        stream.writeString(this.getResourcePatch());
+    public networkSerialize(stream: BinaryStream): void {
+        NetworkUtil.writeString(stream, this.getId());
+        NetworkUtil.writeString(stream, this.getPlayFabId());
+        NetworkUtil.writeString(stream, this.getResourcePatch());
 
         // Skin image
         this.getImage().networkSerialize(stream);
 
         // Animations
-        stream.writeLInt(this.getAnimations().size);
+        stream.writeUnsignedIntLE(this.getAnimations().size);
         for (const animation of this.getAnimations()) {
             animation.getImage().networkSerialize(stream);
-            stream.writeLInt(animation.getType());
-            stream.writeLFloat(animation.getFrames());
-            stream.writeLInt(animation.getExpression());
+            stream.writeUnsignedIntLE(animation.getType());
+            stream.writeFloatLE(animation.getFrames());
+            stream.writeUnsignedIntLE(animation.getExpression());
         }
 
         // Cape image
         this.getCape().getImage().networkSerialize(stream);
 
-        // Miscellaneus
-        stream.writeString(this.getGeometry());
-        stream.writeString(this.getAnimationData());
-        stream.writeBool(this.isPremium());
-        stream.writeBool(this.isPersona());
-        stream.writeBool(this.isCapeOnClassicSkin());
-        stream.writeString(this.getCape().getId());
-        stream.writeString(this.getFullId());
-        stream.writeString(this.getArmSize());
-        stream.writeString(this.getColor());
+        // Miscellaneous
+        NetworkUtil.writeString(stream, this.getGeometry());
+        NetworkUtil.writeString(stream, '0.0.0'); // geometry data engine version
+        NetworkUtil.writeString(stream, this.getAnimationData());
+        NetworkUtil.writeString(stream, this.getCape().getId());
+        NetworkUtil.writeString(stream, this.getFullId());
+        NetworkUtil.writeString(stream, this.getArmSize());
+        NetworkUtil.writeString(stream, this.getColor());
 
         // Hack to keep less useless data in software
         if (this.isPersona()) {
-            stream.writeLInt(this.getPersonaData().getPieces().size);
+            stream.writeUnsignedIntLE(this.getPersonaData().getPieces().size);
             for (const personaPiece of this.getPersonaData().getPieces()) {
-                stream.writeString(personaPiece.getPieceId());
-                stream.writeString(personaPiece.getPieceType());
-                stream.writeString(personaPiece.getPackId());
-                stream.writeBool(personaPiece.isDefault());
-                stream.writeString(personaPiece.getProductId());
+                NetworkUtil.writeString(stream, personaPiece.getPieceId());
+                NetworkUtil.writeString(stream, personaPiece.getPieceType());
+                NetworkUtil.writeString(stream, personaPiece.getPackId());
+                stream.writeBoolean(personaPiece.isDefault());
+                NetworkUtil.writeString(stream, personaPiece.getProductId());
             }
 
-            stream.writeLInt(this.getPersonaData().getTintColors().size);
+            stream.writeUnsignedIntLE(this.getPersonaData().getTintColors().size);
             for (const tint of this.getPersonaData().getTintColors()) {
-                stream.writeString(tint.getPieceType());
-                stream.writeLInt(tint.getColors().length);
+                NetworkUtil.writeString(stream, tint.getPieceType());
+                stream.writeUnsignedIntLE(tint.getColors().length);
                 for (const color of tint.getColors()) {
-                    stream.writeString(color);
+                    NetworkUtil.writeString(stream, color);
                 }
             }
         } else {
-            stream.writeLInt(0); // Persona pieces
-            stream.writeLInt(0); // Tint colors
+            stream.writeUnsignedIntLE(0); // Persona pieces
+            stream.writeUnsignedIntLE(0); // Tint colors
         }
+
+        stream.writeBoolean(this.isPremium());
+        stream.writeBoolean(this.isPersona());
+        stream.writeBoolean(this.isCapeOnClassicSkin());
+        stream.writeBoolean(false); // Is primary user
+        stream.writeBoolean(true); // Is override
     }
 
     public getId(): string {
@@ -227,7 +232,7 @@ export default class Skin {
     }
 
     public getFullId(): string {
-        return this.fullId ?? this.getCape().getId() + this.getId();
+        return this.fullId || this.getId() + this.getCape().getId();
     }
 
     public getPlayFabId(): string {

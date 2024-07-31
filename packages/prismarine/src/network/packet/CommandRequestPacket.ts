@@ -1,6 +1,7 @@
+import { NetworkUtil } from '../../network/NetworkUtil';
+import Identifiers from '../Identifiers';
 import CommandOriginData from '../type/CommandOriginData';
 import DataPacket from './DataPacket';
-import Identifiers from '../Identifiers';
 
 export default class CommandRequestPacket extends DataPacket {
     public static NetID = Identifiers.CommandRequestPacket;
@@ -8,10 +9,12 @@ export default class CommandRequestPacket extends DataPacket {
     public commandName!: string;
     public commandOriginData!: CommandOriginData | null;
     public internal!: boolean;
+    public version!: number;
 
-    public decodePayload() {
-        this.commandName = this.readString();
+    public decodePayload(): void {
+        this.commandName = NetworkUtil.readString(this);
         this.commandOriginData = CommandOriginData.networkDeserialize(this);
-        this.internal = this.readBool();
+        this.internal = this.readBoolean();
+        this.version = this.readVarInt();
     }
 }

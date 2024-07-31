@@ -1,13 +1,18 @@
-/* eslint-disable promise/prefer-await-to-then */
-import { CommandArgumentEntity, CommandArgumentGamemode } from '../CommandArguments';
-import { CommandDispatcher, argument, literal } from '@jsprismarine/brigadier';
-
-import Chat from '../../chat/Chat';
+import type { CommandDispatcher } from '@jsprismarine/brigadier';
+import { argument, literal } from '@jsprismarine/brigadier';
+// eslint-disable-next-line unused-imports/no-unused-imports
+import type { Gametype } from '@jsprismarine/minecraft';
+import { getGametypeId } from '@jsprismarine/minecraft';
+import type Player from '../../Player';
+import { Chat } from '../../chat/Chat';
 import ChatEvent from '../../events/chat/ChatEvent';
-import Command from '../Command';
-import Gamemode from '../../world/Gamemode';
-import Player from '../../player/Player';
+import { Command } from '../Command';
+import { CommandArgumentEntity, CommandArgumentGamemode } from '../CommandArguments';
 
+/**
+ * Manage a player's {@link Gametype} (gamemode).
+ * @remarks the `/gamemode` command.
+ */
 export default class GamemodeCommand extends Command {
     public constructor() {
         super({
@@ -18,25 +23,32 @@ export default class GamemodeCommand extends Command {
     }
 
     private async setGamemode(source: Player, target: Player, gamemode: string) {
-        if (!target) {
-            const event = new ChatEvent(new Chat(source, `Player is not online!`, `*.player.${source.getName()}`));
-            await source.getServer().getEventManager().emit('chat', event);
+        if (!(target as any)) {
+            const event = new ChatEvent(
+                new Chat({
+                    sender: source,
+                    message: `Player is not online!`,
+                    channel: `*.player.${source.getName()}`
+                })
+            );
+            await source.getServer().emit('chat', event);
             return;
         }
 
         if (!target.isPlayer()) {
             const event = new ChatEvent(
-                new Chat(
-                    source,
-                    `Can't set ${source.getFormattedUsername()} to ${gamemode}`,
-                    `*.player.${source.getName()}`
-                )
+                new Chat({
+                    sender: source,
+                    message: `Can't set ${source.getFormattedUsername()} to ${gamemode}`,
+
+                    channel: `*.player.${source.getName()}`
+                })
             );
-            await source.getServer().getEventManager().emit('chat', event);
+            await source.getServer().emit('chat', event);
             return;
         }
 
-        await target.setGamemode(Gamemode.getGamemodeId(gamemode));
+        await target.setGamemode(getGametypeId(gamemode));
     }
 
     public async register(dispatcher: CommandDispatcher<any>) {
@@ -53,7 +65,9 @@ export default class GamemodeCommand extends Command {
 
                                 if (!targets.length) throw new Error(`Cannot find player`);
 
-                                targets.forEach(async (target) => this.setGamemode(source, target, gamemode));
+                                await Promise.all(
+                                    targets.map(async (target) => await this.setGamemode(source, target, gamemode))
+                                );
                             }
                         )
                     )

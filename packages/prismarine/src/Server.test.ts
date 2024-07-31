@@ -1,40 +1,18 @@
-import LoggerBuilder from './utils/Logger';
+import { describe, expect, it, vi } from 'vitest';
+
+import { Logger } from '@jsprismarine/logger';
 import Server from './Server';
 
-jest.mock('winston', () => ({
-    format: {
-        colorize: jest.fn(),
-        combine: jest.fn(),
-        label: jest.fn(),
-        timestamp: jest.fn(),
-        simple: jest.fn(),
-        printf: jest.fn()
-    },
-    createLogger: jest.fn().mockReturnValue({
-        silly: jest.fn(),
-        debug: jest.fn(),
-        log: jest.fn(),
-        info: jest.fn()
-    }),
-    transports: {
-        Console: jest.fn(),
-        File: jest.fn()
-    }
-}));
-
 describe('Prismarine', () => {
-    it.skip('server to start & exit properly', async (done) => {
-        jest.setTimeout(35000);
-
+    it.skip('server to start & exit properly', async () => {
         const getRandomInt = (min: number, max: number) => {
             min = Math.ceil(min);
             max = Math.floor(max);
             return Math.floor(Math.random() * (max - min + 1)) + min;
         };
 
-        const logger = new LoggerBuilder();
+        const logger = new Logger();
         const prismarine = new Server({
-            version: 'test',
             logger,
             config: new (class DebugConfig {
                 public getPort() {
@@ -77,24 +55,16 @@ describe('Prismarine', () => {
                     return false;
                 }
 
-                public getTelemetry() {
-                    return {
-                        enabled: false,
-                        urls: []
-                    };
-                }
-
                 public getPacketCompressionLevel() {
                     return 7;
                 }
             })() as any
         });
 
-        const mockExit = jest.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+        const mockExit = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
 
-        await prismarine.listen('0.0.0.0', getRandomInt(46000, 49999));
-        await prismarine.kill();
+        await prismarine.bootstrap('0.0.0.0', getRandomInt(46000, 49999));
+        await prismarine.shutdown();
         expect(mockExit).toHaveBeenCalledWith(0);
-        done();
     });
 });

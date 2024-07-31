@@ -1,10 +1,10 @@
 {
-    "extends": "./packages/tsconfig.json",
+    "extends": "./tsconfig.build.json",
+
     "compilerOptions": {
-        "outDir": "./dist",
-        "rootDir": "./packages",
-        "typeRoots": ["./packages/prismarine/src/@types", "./node_modules/@types"]
+        "baseUrl": ".",
+        "noEmit": true
     },
-    "exclude": ["node_modules", "dist", "__tests__", "**/*.test*", "**/*.spec*"],
-    "references": [{ "path": "packages/prismarine/src" }, { "path": "packages/updater/src" }]
+
+    "exclude": ["**/*.config.*", "**/*.stories.*", "**/*.test.*"]
 }

@@ -1,5 +1,6 @@
-import DataPacket from './DataPacket';
+import { NetworkUtil } from '../../network/NetworkUtil';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class UpdateSoftEnumPacket extends DataPacket {
     public static NetID = Identifiers.UpdateSoftEnumPacket;
@@ -12,11 +13,11 @@ export default class UpdateSoftEnumPacket extends DataPacket {
     public values: string[] = [];
     public type!: number;
 
-    public encodePayload() {
-        this.writeString(this.enumName);
+    public encodePayload(): void {
+        NetworkUtil.writeString(this, this.enumName);
         this.writeUnsignedVarInt(this.values.length);
         this.values.forEach((v) => {
-            this.writeString(v);
+            NetworkUtil.writeString(this, v);
         });
         this.writeByte(this.type);
     }

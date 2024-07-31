@@ -1,10 +1,10 @@
 import * as Blocks from './Blocks';
 
-import Block from './Block';
-import { BlockIdsType } from './BlockIdsType';
+import type Server from '../Server';
 import BlockRegisterEvent from '../events/block/BlockRegisterEvent';
-import Server from '../Server';
 import Timer from '../utils/Timer';
+import type { Block } from './Block';
+import { BlockIdsType } from './BlockIdsType';
 
 export default class BlockManager {
     private readonly server: Server;
@@ -16,16 +16,18 @@ export default class BlockManager {
     }
 
     /**
-     * OnEnable hook.
+     * On enable hook.
+     * @group Lifecycle
      */
-    public async onEnable() {
+    public async enable(): Promise<void> {
         await this.importBlocks();
     }
 
     /**
-     * OnDisable hook.
+     * On disable hook.
+     * @group Lifecycle
      */
-    public async onDisable() {
+    public async disable(): Promise<void> {
         this.blocks.clear();
     }
 
@@ -54,11 +56,9 @@ export default class BlockManager {
     /**
      * Get block by numeric id and meta value.
      */
-    public getBlockByIdAndMeta(id: number, meta: number): Block {
+    public getBlockByIdAndMeta(id: number, meta: number): Block | null {
         const block = this.getBlocks().find((a) => a.id === id && a.meta === meta);
-
-        if (!block) throw new Error(`invalid block with numeric id ${id}:${meta}`);
-        return block;
+        return block || null;
     }
 
     /**
@@ -73,23 +73,17 @@ export default class BlockManager {
     /**
      * Register a block.
      *
-     * @param block The block
+     * @param block - The block
      */
     public async registerBlock(block: Block) {
-        try {
-            this.blocks.get(block.name);
-            this.getBlockByIdAndMeta(block.getId(), block.getMeta());
-
+        if (this.blocks.get(block.name) || this.getBlockByIdAndMeta(block.getId(), block.getMeta()))
             throw new Error(`Block with id ${block.getName()} (${block.getId()}:${block.getMeta()}) already exists`);
-        } catch (error) {
-            if (!error.message.includes('invalid block with ')) throw error;
-        }
 
         const event = new BlockRegisterEvent(block);
-        await this.server.getEventManager().emit('blockRegister', event);
-        if (event.cancelled) return;
+        await this.server.emit('blockRegister', event);
+        if (event.isCancelled()) return;
 
-        this.server.getLogger()?.debug(`Block with id §b${block.name}§r registered`, 'BlockManager/registerClassBlock');
+        this.server.getLogger().debug(`Block with id §b${block.name}§r registered`);
         this.blocks.set(block.name, block);
         this.javaBlocks.set(block.javaName, block);
     }
@@ -103,11 +97,6 @@ export default class BlockManager {
         // Dynamically register blocks
         await Promise.all(Object.entries(Blocks).map(async ([, block]) => this.registerBlock(new block())));
 
-        this.server
-            .getLogger()
-            ?.verbose(
-                `Registered §b${this.blocks.size}§r block(s) (took ${timer.stop()} ms)!`,
-                'BlockManager/importBlocks'
-            );
+        this.server.getLogger().verbose(`Registered §b${this.blocks.size}§r block(s) (took §e${timer.stop()} ms§r)!`);
     }
 }

@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest';
+
 import BinaryStream from '@jsprismarine/jsbinaryutils';
 import UUID from './UUID';
 

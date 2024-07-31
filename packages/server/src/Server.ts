@@ -1,61 +1,75 @@
-import { Config, Logger, Server } from '@jsprismarine/prismarine';
+import colorParser from '@jsprismarine/color-parser';
+import { Logger } from '@jsprismarine/logger';
+import { Config, Server } from '@jsprismarine/prismarine';
+import { format, transports } from 'winston';
 
-import Updater from '@jsprismarine/updater';
-import fs from 'fs';
-import path from 'path';
+import dotenv from 'dotenv';
+import path from 'node:path';
 
-// Process metadata
-process.title = 'Prismarine';
+process.title = 'JSPrismarine';
 
-if (process.env.JSP_DIR && !fs.existsSync(path.join(process.cwd(), process.env.JSP_DIR)))
-    fs.mkdirSync(path.join(process.cwd(), process.env.JSP_DIR));
-
-const config = new Config(process.env.npm_package_version!);
-const logger = new Logger();
-
-const updater = new Updater({
-    config,
-    logger,
-    version: process.env.npm_package_version!
+dotenv.config({
+    path: [
+        path.join(process.cwd(), '.env'),
+        path.join(process.cwd(), '.env.local'),
+        path.join(process.cwd(), '.env.development'),
+        path.join(process.cwd(), '.env.development.local')
+    ]
 });
 
-void updater.check().then(() => {
-    const Prismarine = new Server({
-        config,
-        logger,
-        version: process.env.npm_package_version!
-    });
+const date = new Date();
+let logFile = 'jsprismarine-development.log';
 
-    Prismarine.listen(config.getServerIp(), config.getPort()).catch(async (error) => {
-        Prismarine.getLogger()?.error(`Cannot start the server, is it already running on the same port?`, 'Prismarine');
-        if (error) console.error(error);
+if (process.env.NODE_ENV !== 'development')
+    logFile = `jsprismarine.${(date.getMonth() + 1).toString().padStart(2, '0')}${date
+        .getDate()
+        .toString()
+        .padStart(2, '0')}${date.getFullYear().toString().padStart(2, '0')}-${date
+        .getHours()
+        .toString()
+        .padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date
+        .getSeconds()
+        .toString()
+        .padStart(2, '0')}.log`;
 
-        await Prismarine.kill({
-            crash: true
-        });
-    });
-
-    // Kills the server when exiting process
-    [
-        'uncaughtException',
-        'unhandledRejection',
-        'SIGHUP',
-        'SIGINT',
-        'SIGQUIT',
-        'SIGILL',
-        'SIGTRAP',
-        'SIGABRT',
-        'SIGBUS',
-        'SIGFPE',
-        'SIGUSR1',
-        'SIGSEGV',
-        'SIGUSR2',
-        'SIGTERM'
-    ].forEach((interruptSignal) =>
-        process.on(interruptSignal, async () => {
-            await Prismarine.kill();
+const config = new Config();
+const logger = new Logger(config.getLogLevel(), [
+    new transports.File({
+        level: 'debug',
+        filename: path.join(process.cwd(), process.env.JSP_DIR || '', 'logs', logFile),
+        format: format.printf(({ level, message, timestamp, namespace }: any) => {
+            return `[${timestamp}] [${level}]${colorParser(
+                `${namespace ? ` [${namespace}]` : ''}: ${message}`
+            )}`.replaceAll(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
         })
-    );
-
-    (global as any).Server = Prismarine;
+    })
+]);
+const server = new Server({
+    config,
+    logger
 });
+
+['SIGSEGV', 'SIGHUP', 'uncaughtException'].forEach((signal) => {
+    try {
+        process.on(signal, async (error) => {
+            if (error instanceof Error) {
+                logger.error(error);
+            }
+
+            void server.shutdown({ crash: error === 'uncaughtException' });
+
+            // FIXME: This is a temporary fix for the server not shutting down properly.
+            process.exit(1);
+        });
+    } catch {}
+});
+
+try {
+    await server.bootstrap(config.getServerIp(), config.getServerPort());
+} catch (error: unknown) {
+    console.warn(`Cannot start the server, is it already running on the same port?`);
+    console.error(error);
+    await server.shutdown({ crash: true });
+}
+
+export {};

@@ -1,10 +1,10 @@
 import { ByteOrder, NBTReader } from '@jsprismarine/nbt';
 
-import BinaryStream from '@jsprismarine/jsbinaryutils';
-import { BlockToolType } from '../block/BlockToolType';
-import { ItemEnchantmentType } from './ItemEnchantmentType';
 import { item_id_map as ItemIdMap } from '@jsprismarine/bedrock-data';
-import PacketBinaryStream from '../network/PacketBinaryStream';
+import BinaryStream from '@jsprismarine/jsbinaryutils';
+import { BlockMappings } from '../block/BlockMappings';
+import { BlockToolType } from '../block/BlockToolType';
+import type { ItemEnchantmentType } from './ItemEnchantmentType';
 
 export interface ItemProps {
     id: number;
@@ -15,7 +15,7 @@ export interface ItemProps {
     durability?: number;
 }
 
-export default class Item {
+export class Item {
     private id: number;
     private networkId: number;
     private name: string;
@@ -32,7 +32,6 @@ export default class Item {
         if (meta) this.meta = meta;
 
         this.networkId = ItemIdMap[name] as number;
-        // if (!this.networkId) console.log(name, id, this.networkId);
     }
 
     public getName(): string {
@@ -47,7 +46,7 @@ export default class Item {
      * Get the Block's network numeric id
      */
     public getNetworkId() {
-        return this.networkId ?? this.getId();
+        return this.networkId || this.getId();
     }
 
     public isTool() {
@@ -58,7 +57,7 @@ export default class Item {
         return false;
     }
 
-    public getBurntime() {
+    public getBurnTime() {
         return 0;
     }
 
@@ -78,7 +77,7 @@ export default class Item {
         return 0;
     }
 
-    public hasEnchantment(enchantment: ItemEnchantmentType) {
+    public hasEnchantment(_enchantment: ItemEnchantmentType) {
         return false;
     }
 
@@ -106,68 +105,99 @@ export default class Item {
         return true;
     }
 
-    public networkSerialize(stream: BinaryStream): void {
-        if (this.getName() === 'minecraft:air') {
-            stream.writeVarInt(0);
+    public networkSerialize(
+        stream: BinaryStream,
+        additionalData: null | ((stream: BinaryStream) => void) = null
+    ): void {
+        stream.writeVarInt(this.getNetworkId());
+        if (this.getId() === 0 || this.getName() === 'minecraft:air') {
+            // The item is Air so there's no additional data
             return;
         }
 
-        stream.writeVarInt(this.getNetworkId());
-        stream.writeVarInt(((this.meta & 0x7fff) << 8) | this.getAmount());
+        stream.writeShortLE(this.getAmount());
+        stream.writeUnsignedVarInt(this.meta);
 
-        if (this.nbt !== null) {
+        // Use a closure to add additional data
+        if (additionalData) {
+            additionalData(stream);
+        }
+
+        // TODO: Proper block runtime ID
+        stream.writeVarInt(BlockMappings.getRuntimeId(this.getName()));
+
+        const str = new BinaryStream();
+
+        /* if (this.nbt !== null) {
             // Write the amount of tags to write
             // (1) according to vanilla
-            stream.writeLShort(0xffff);
+            stream.writeUnsignedShortLE(0xffff);
             stream.writeByte(1);
 
             // Write hardcoded NBT tag
             // TODO: unimplemented NBT.write(nbt, true, true)
-        } else {
-            stream.writeLShort(0);
-        }
+        } */
+
+        // TODO: proper NBT
+        str.writeShortLE(0);
 
         // CanPlace and canBreak
-        stream.writeVarInt(0);
-        stream.writeVarInt(0);
+        str.writeIntLE(0);
+        str.writeIntLE(0);
+
+        // TODO: check for additional data
+        if (this.getName() === 'minecraft:shield') {
+            str.writeLongLE(BigInt(0));
+        }
+
+        stream.writeUnsignedVarInt(str.getBuffer().byteLength);
+        stream.write(str.getBuffer());
 
         // TODO: check for additional data
     }
 
-    public static networkDeserialize(stream: PacketBinaryStream): Item {
+    public static networkDeserialize(stream: BinaryStream, extra = false): Item {
         const id = stream.readVarInt();
         if (id === 0) {
             // TODO: items
             return new Item({ id: 0, name: 'minecraft:air' });
         }
 
+        const _count = stream.readUnsignedShortLE(); // eslint-disable-line unused-imports/no-unused-vars
+        const _netData = stream.readUnsignedVarInt(); // eslint-disable-line unused-imports/no-unused-vars
+
+        // TODO: refactor everything basically...
+        if (extra && stream.readBoolean()) {
+            stream.readVarInt();
+        }
+
         const temp = stream.readVarInt();
-        const amount = temp & 0xff;
+        // const amount = temp & 0xff;
         const data = temp >> 8;
 
-        let nbt = null;
-        const extraLen = stream.readLShort();
+        let _nbt = null;
+        const extraLen = stream.readUnsignedShortLE();
         if (extraLen === -1) {
-            const version = stream.readByte();
+            const version = stream.readByte(); // eslint-disable-line unused-imports/no-unused-vars
 
             try {
-                const nbtReader = new NBTReader(stream, ByteOrder.ByteOrder.LITTLE_ENDIAN);
+                const nbtReader = new NBTReader(stream, ByteOrder.LITTLE_ENDIAN);
                 nbtReader.setUseVarint(true);
-                nbt = nbtReader.parse();
-            } catch (e) {
-                throw new Error(`Failed to parse item stack nbt: ${e}`);
+                _nbt = nbtReader.parse();
+            } catch (error: unknown) {
+                throw new Error(`Failed to parse item stack nbt`, { cause: error });
                 // TODO: Just log and return AIR
             }
         }
 
         const countPlaceOn = stream.readVarInt();
         for (let i = 0; i < countPlaceOn; i++) {
-            stream.readString();
+            stream.read(stream.readUnsignedShortLE());
         }
 
         const countCanBreak = stream.readVarInt();
         for (let i = 0; i < countCanBreak; i++) {
-            stream.readString();
+            stream.read(stream.readUnsignedShortLE());
         }
 
         // TODO: check if has additional data

@@ -1,9 +1,9 @@
-/* eslint-disable promise/prefer-await-to-then */
-import { CommandDispatcher, argument, greedyString, literal, string } from '@jsprismarine/brigadier';
+import type { CommandDispatcher } from '@jsprismarine/brigadier';
+import { argument, greedyString, literal, string } from '@jsprismarine/brigadier';
 
-import Command from '../Command';
-import Player from '../../player/Player';
-import { WorldData } from '../../world/WorldManager';
+import type Player from '../../Player';
+import type { WorldData } from '../../world/WorldManager';
+import { Command } from '../Command';
 
 export default class DebugCommand extends Command {
     public constructor() {
@@ -39,14 +39,15 @@ export default class DebugCommand extends Command {
                                     return `Moved ${source.getFormattedUsername()} to ${world.getName()}`;
                                 }
                                 case 'setConfig': {
-                                    const config = value.split(' ')[0];
+                                    const config = value.split(' ')[0]!;
                                     const data = value.replace(`${config} `, '');
 
                                     (source.getServer().getConfig() as any)[config] = data;
                                     return `Set config ${config} to ${data}`;
                                 }
-                                default:
+                                default: {
                                     throw new Error('Invalid action!');
+                                }
                             }
                         })
                     )
@@ -58,7 +59,7 @@ export default class DebugCommand extends Command {
                     await source.sendMessage(`§dWorlds Loaded§r (${worlds.length}):`);
                     for (const world of worlds) {
                         await source.sendMessage(
-                            `- id: §a${world.getUniqueId()}§r, name: §b${world.getName()}§r, ticks: §b${world.getTicks()}§r`
+                            `- uuid: §a${world.getUUID()}§r, name: §b${world.getName()}§r, ticks: §b${world.getTicks()}§r`
                         );
 
                         const gamerules = Array.from(world.getGameruleManager().getGamerules());
@@ -71,13 +72,7 @@ export default class DebugCommand extends Command {
 
                         const entities = world.getEntities();
                         await source.sendMessage(`  §dEntities§r (${entities.length}):`);
-                        await Promise.all(
-                            entities.map(async (e) =>
-                                source.sendMessage(
-                                    `  - id: §a${e.getRuntimeId()}§r, name: §b${e.getName()}§r, type: §b${e.getType()}§r, x: §b${e.getX()}§r, y: §b${e.getY()}§r, z: §b${e.getZ()}§r`
-                                )
-                            )
-                        );
+                        await Promise.all(entities.map(async (e) => source.sendMessage(`  - ${e.toString()}`)));
                     }
 
                     await source.sendMessage(`§dConfig§r:`);

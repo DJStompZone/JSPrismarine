@@ -1,15 +1,15 @@
-import DataPacket from './DataPacket';
+import type { Vector3 } from '@jsprismarine/math';
 import Identifiers from '../Identifiers';
+import { NetworkUtil } from '../NetworkUtil';
 import MovementType from '../type/MovementType';
+import DataPacket from './DataPacket';
 
 export default class MovePlayerPacket extends DataPacket {
     public static NetID = Identifiers.MovePlayerPacket;
 
     public runtimeEntityId!: bigint;
 
-    public positionX!: number;
-    public positionY!: number;
-    public positionZ!: number;
+    public position!: Vector3;
 
     public pitch!: number;
     public yaw!: number;
@@ -26,47 +26,41 @@ export default class MovePlayerPacket extends DataPacket {
 
     public tick!: bigint;
 
-    public decodePayload() {
+    public decodePayload(): void {
         this.runtimeEntityId = this.readUnsignedVarLong();
 
-        this.positionX = this.readLFloat();
-        this.positionY = this.readLFloat();
-        this.positionZ = this.readLFloat();
-
-        this.pitch = this.readLFloat();
-        this.yaw = this.readLFloat();
-        this.headYaw = this.readLFloat();
+        this.position = NetworkUtil.readVector3(this);
+        this.pitch = this.readFloatLE();
+        this.yaw = this.readFloatLE();
+        this.headYaw = this.readFloatLE();
 
         this.mode = this.readByte();
-        this.onGround = this.readBool();
+        this.onGround = this.readBoolean();
         this.ridingEntityRuntimeId = this.readUnsignedVarLong();
 
         if (this.mode === MovementType.Teleport) {
-            this.teleportCause = this.readLInt();
-            this.teleportItemId = this.readLInt();
+            this.teleportCause = this.readIntLE();
+            this.teleportItemId = this.readIntLE();
         }
 
         this.tick = this.readUnsignedVarLong();
     }
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeUnsignedVarLong(this.runtimeEntityId);
 
-        this.writeLFloat(this.positionX);
-        this.writeLFloat(this.positionY);
-        this.writeLFloat(this.positionZ);
-
-        this.writeLFloat(this.pitch);
-        this.writeLFloat(this.yaw);
-        this.writeLFloat(this.headYaw);
+        NetworkUtil.writeVector3(this, this.position);
+        this.writeFloatLE(this.pitch);
+        this.writeFloatLE(this.yaw);
+        this.writeFloatLE(this.headYaw);
 
         this.writeByte(this.mode);
-        this.writeBool(this.onGround);
+        this.writeBoolean(this.onGround);
         this.writeUnsignedVarLong(this.ridingEntityRuntimeId);
 
         if (this.mode === MovementType.Teleport) {
-            this.writeLInt(this.teleportCause);
-            this.writeLInt(this.teleportItemId);
+            this.writeIntLE(this.teleportCause);
+            this.writeIntLE(this.teleportItemId);
         }
 
         this.writeUnsignedVarLong(this.tick);

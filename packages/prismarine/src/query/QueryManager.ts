@@ -1,32 +1,23 @@
 import BinaryStream from '@jsprismarine/jsbinaryutils';
 import type { InetAddress } from '@jsprismarine/raknet';
-import PluginFile from '../plugin/PluginFile';
-import Server from '../Server';
-import git from 'git-rev-sync';
+import type Server from '../Server';
 
 export enum QueryType {
     Handshake = 0,
     Stats = 9
 }
 
-export default class QueryManager {
+export class QueryManager {
     private readonly server: Server;
-    public git_rev: string;
 
     public constructor(server: Server) {
         this.server = server;
-
-        try {
-            this.git_rev = git.short() || 'unknown';
-        } catch {
-            this.git_rev = 'unknown;';
-        }
     }
 
     public async onRaw(buffer: Buffer, rinfo: InetAddress): Promise<Buffer> {
         return new Promise(async (resolve, reject) => {
             const stream = new BinaryStream(buffer);
-            const magic = stream.readShort();
+            const magic = stream.readUnsignedShort();
             const type: QueryType = stream.readByte();
             const sessionId = stream.readInt() & 0x0f0f0f0f;
 
@@ -41,8 +32,13 @@ export default class QueryManager {
                     const res = new BinaryStream();
                     res.writeByte(9);
                     res.writeInt(sessionId);
-                    res.append(Buffer.from(`9513307\0`, 'binary'));
-                    await this.server.getRaknet().sendBuffer(res.getBuffer(), rinfo.getAddress(), rinfo.getPort());
+                    res.write(Buffer.from(`9513307\0`, 'binary'));
+                    this.server.getRaknet().sendBuffer(res.getBuffer(), {
+                        address: rinfo.getAddress(),
+                        port: rinfo.getPort(),
+                        family: 'IPv4',
+                        size: 0
+                    });
                     resolve(res.getBuffer());
                     return;
                 }
@@ -64,33 +60,29 @@ export default class QueryManager {
                     res.writeByte(0);
                     // End padding
 
-                    const plugins = this.server
-                        .getPluginManager()
-                        .getPlugins()
-                        .map((plugin: PluginFile) => `${plugin.getDisplayName()} ${plugin.getVersion()}`);
-                    res.append(
+                    const plugins: string[] = [];
+                    res.write(
                         Buffer.from(
                             `\0${[
                                 'hostname',
-                                this.server.getRaknet().getName().getMotd(),
+                                this.server.getMetadata().getMotd(),
+
                                 'gametype',
                                 'SMP',
                                 'game_id',
                                 'MINECRAFTPE',
                                 'version',
-                                this.server.getRaknet().getName().getVersion(),
+                                this.server.getVersion(),
                                 'plugins',
-                                `JSPrismarine on Prismarine ${this.server.getConfig().getVersion()}-${this.git_rev}${
-                                    (plugins.length && ': ') || ''
-                                }${plugins.join('; ')}`, // TODO
+                                `JSPrismarine on Prismarine ${this.server.getVersion()} ${plugins.join('; ')}`, // TODO
                                 'map',
-                                this.server.getWorldManager().getDefaultWorld()?.getName(),
+                                this.server.getWorldManager().getDefaultWorld()!.getName(),
                                 'numplayers',
-                                this.server.getRaknet().getName().getOnlinePlayerCount(),
+                                this.server.getMetadata().getOnlinePlayerCount(),
                                 'maxplayers',
-                                this.server.getRaknet().getName().getMaxPlayerCount(),
+                                this.server.getMetadata().getMaxPlayerCount(),
                                 'hostport',
-                                this.server.getConfig().getPort(),
+                                this.server.getConfig().getServerPort(),
                                 'hostip',
                                 this.server.getConfig().getServerIp()
                             ].join('\0')}\0\0`,
@@ -111,16 +103,21 @@ export default class QueryManager {
                     res.writeByte(0);
                     // End padding
 
-                    res.append(
+                    res.write(
                         Buffer.from(
                             `${this.server
-                                .getPlayerManager()
-                                .getOnlinePlayers()
+                                .getSessionManager()
+                                .getAllPlayers()
                                 .map((player) => `${player.getName()}\0`)}\0`,
                             'binary'
                         )
                     );
-                    await this.server.getRaknet().sendBuffer(res.getBuffer(), rinfo.getAddress(), rinfo.getPort());
+                    this.server.getRaknet().sendBuffer(res.getBuffer(), {
+                        address: rinfo.getAddress(),
+                        port: rinfo.getPort(),
+                        family: 'IPv4',
+                        size: 0
+                    });
 
                     resolve(res.getBuffer());
                     return;

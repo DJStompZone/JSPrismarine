@@ -1,6 +1,8 @@
+import { describe, it, expect } from 'vitest';
+
 import TickSyncPacket from './TickSyncPacket';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 describe('network', () => {
     describe('packet', () => {
@@ -22,7 +24,7 @@ describe('network', () => {
                 pk.serverReceptionTimestamp = BigInt(0xfeedbabe);
                 pk.encode();
 
-                expect(dump.equals(pk.getBuffer())).toBe(true);
+                expect(dump.equals((pk as any).getBuffer())).toBe(true);
             });
         });
     });

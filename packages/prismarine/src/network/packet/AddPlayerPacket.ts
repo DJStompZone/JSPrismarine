@@ -1,8 +1,9 @@
-import ContainerEntry from '../../inventory/ContainerEntry';
-import DataPacket from './DataPacket';
+import { Metadata } from '../../entity/Metadata';
+import type { Item } from '../../item/Item';
+import { NetworkUtil } from '../../network/NetworkUtil';
+import type UUID from '../../utils/UUID';
 import Identifiers from '../Identifiers';
-import MetadataManager from '../../entity/Metadata';
-import UUID from '../../utils/UUID';
+import DataPacket from './DataPacket';
 
 export default class AddPlayerPacket extends DataPacket {
     public static NetID = Identifiers.AddPlayerPacket;
@@ -13,62 +14,65 @@ export default class AddPlayerPacket extends DataPacket {
     public runtimeEntityId!: bigint;
     public platformChatId!: string;
 
-    public positionX!: number;
-    public positionY!: number;
-    public positionZ!: number;
+    public positionX: number = 0;
+    public positionY: number = 5;
+    public positionZ: number = 0;
 
-    public motionX!: number;
-    public motionY!: number;
-    public motionZ!: number;
+    public motionX: number = 0;
+    public motionY: number = 0;
+    public motionZ: number = 0;
 
     public pitch!: number;
     public yaw!: number;
     public headYaw!: number;
 
-    public item!: ContainerEntry;
+    public gamemode: number = 0;
+    public item!: Item;
 
     public deviceId!: string;
     public buildPlatform!: number;
 
-    public metadata!: MetadataManager;
+    public metadata!: Metadata;
 
-    public encodePayload() {
+    constructor() {
+        super();
+        this.metadata = new Metadata();
+    }
+
+    public encodePayload(): void {
         this.uuid.networkSerialize(this);
-        this.writeString(this.name);
-        this.writeVarLong(this.uniqueEntityId || this.runtimeEntityId);
+        NetworkUtil.writeString(this, this.name);
         this.writeUnsignedVarLong(this.runtimeEntityId);
-        this.writeString(this.platformChatId || '');
+        NetworkUtil.writeString(this, this.platformChatId || '');
 
-        this.writeLFloat(this.positionX);
-        this.writeLFloat(this.positionY);
-        this.writeLFloat(this.positionZ);
+        this.writeFloatLE(this.positionX);
+        this.writeFloatLE(this.positionY);
+        this.writeFloatLE(this.positionZ);
 
-        this.writeLFloat(this.motionX);
-        this.writeLFloat(this.motionY);
-        this.writeLFloat(this.motionZ);
+        this.writeFloatLE(this.motionX);
+        this.writeFloatLE(this.motionY);
+        this.writeFloatLE(this.motionZ);
 
-        this.writeLFloat(this.pitch);
-        this.writeLFloat(this.yaw);
-        this.writeLFloat(this.headYaw);
+        this.writeFloatLE(this.pitch);
+        this.writeFloatLE(this.yaw);
+        this.writeFloatLE(this.headYaw);
 
-        this.item.networkSerialize(this);
+        // TODO: figure out how to send AIR as item
+        this.writeVarInt(0);
+        // this.item.networkSerialize(this);
+        this.writeVarInt(this.gamemode); // TODO: gamemode
         this.metadata.networkSerialize(this);
 
-        for (let i = 0; i < 5; i++) {
-            this.writeUnsignedVarInt(0); // TODO: Adventure settings
-        }
+        this.writeUnsignedVarInt(0); // ? unknown
+        this.writeUnsignedVarInt(0); // ? unknown
 
-        // UserId
-        // if (this.uniqueEntityId & 1n) {
-        //    this.writeLLong(-1n * ((this.uniqueEntityId + 1n) >> 1n));
-        // } else {
-        //     this.writeLLong(this.uniqueEntityId >> 1n);
-        // }
-
-        this.writeLLong(BigInt(0)); // TODO: fix userid
+        this.writeLongLE(this.uniqueEntityId || this.runtimeEntityId);
+        this.writeByte(0); // command permission
+        this.writeByte(0); // permission level
+        this.writeByte(0); // ? unknown
 
         this.writeUnsignedVarInt(0); // TODO: Entity links
-        this.writeString(this.deviceId);
-        this.writeLInt(this.buildPlatform || -1); // TODO: OS enum
+        NetworkUtil.writeString(this, this.deviceId);
+        this.writeIntLE(this.buildPlatform || -1); // TODO: OS enum
     }
 }

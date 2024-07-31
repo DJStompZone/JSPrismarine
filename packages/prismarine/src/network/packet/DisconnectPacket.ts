@@ -1,21 +1,25 @@
-import DataPacket from './DataPacket';
+import { NetworkUtil } from '../../network/NetworkUtil';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class DisconnectPacket extends DataPacket {
     public static NetID = Identifiers.DisconnectPacket;
 
-    public hideDisconnectionWindow!: boolean;
+    public reason!: number;
+    public skipMessage!: boolean;
     public message!: string;
 
-    public encodePayload() {
-        this.writeBool(this.hideDisconnectionWindow);
+    public encodePayload(): void {
+        this.writeVarInt(this.reason);
+        this.writeBoolean(this.skipMessage);
 
-        if (!this.hideDisconnectionWindow) this.writeString(this.message);
+        if (!this.skipMessage) NetworkUtil.writeString(this, this.message);
     }
 
-    public decodePayload() {
-        this.hideDisconnectionWindow = this.readBool();
+    public decodePayload(): void {
+        this.reason = this.readVarInt();
+        this.skipMessage = this.readBoolean();
 
-        if (!this.hideDisconnectionWindow) this.message = this.readString();
+        if (!this.skipMessage) this.message = NetworkUtil.readString(this);
     }
 }

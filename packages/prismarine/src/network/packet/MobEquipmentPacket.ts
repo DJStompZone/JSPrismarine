@@ -1,17 +1,17 @@
-import type ContainerEntry from '../../inventory/ContainerEntry';
-import DataPacket from './DataPacket';
+import type { Item } from '../../item/Item';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class MobEquipmentPacket extends DataPacket {
     public static NetID = Identifiers.MobEquipmentPacket;
 
     public runtimeEntityId!: bigint;
-    public item!: ContainerEntry;
+    public item!: Item;
     public inventorySlot!: number;
     public hotbarSlot!: number;
     public windowId!: number;
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeUnsignedVarLong(this.runtimeEntityId);
         this.item.networkSerialize(this);
         this.writeByte(this.inventorySlot);

@@ -1,9 +1,9 @@
-import BinaryStream from '@jsprismarine/jsbinaryutils';
-import DataPacket from './DataPacket';
-import Device from '../../utils/Device';
-import Identifiers from '../Identifiers';
-import Skin from '../../utils/skin/Skin';
 import fastJWT from 'fast-jwt';
+import { NetworkUtil } from '../../network/NetworkUtil';
+import Device from '../../utils/Device';
+import Skin from '../../utils/skin/Skin';
+import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class LoginPacket extends DataPacket {
     public static NetID = Identifiers.LoginPacket;
@@ -31,8 +31,9 @@ export default class LoginPacket extends DataPacket {
     public decodePayload(): void {
         this.protocol = this.readInt();
 
-        const stream = new BinaryStream(this.read(this.readUnsignedVarInt()));
-        const chainData = JSON.parse(stream.read(stream.readLInt()).toString());
+        // TODO: content length, to validate it's lenght...
+        this.readUnsignedVarInt();
+        const chainData = JSON.parse(NetworkUtil.readLELengthASCIIString(this));
         const decode = fastJWT.createDecoder();
 
         for (const chain of chainData.chain) {
@@ -47,7 +48,7 @@ export default class LoginPacket extends DataPacket {
             this.identityPublicKey = decodedChain.identityPublicKey;
         }
 
-        const decodedJWT = decode(stream.read(stream.readLInt()).toString());
+        const decodedJWT = decode(NetworkUtil.readLELengthASCIIString(this));
         this.skin = Skin.fromJWT(decodedJWT);
         this.device = new Device({
             id: decodedJWT.DeviceId,

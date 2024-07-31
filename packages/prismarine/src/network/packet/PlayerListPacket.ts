@@ -1,14 +1,13 @@
-import BinaryStream from '@jsprismarine/jsbinaryutils';
-import DataPacket from './DataPacket';
+import type BinaryStream from '@jsprismarine/jsbinaryutils';
+import { NetworkUtil } from '../../network/NetworkUtil';
+import type UUID from '../../utils/UUID';
+import type Skin from '../../utils/skin/Skin';
 import Identifiers from '../Identifiers';
-import PacketBinaryStream from '../PacketBinaryStream';
-import Skin from '../../utils/skin/Skin';
-import UUID from '../../utils/UUID';
-import { stream } from 'winston';
+import DataPacket from './DataPacket';
 
 interface PlayerListData {
     uuid: UUID;
-    uniqueEntityid?: bigint | null;
+    runtimeId?: bigint | null;
     name?: string | null;
     xuid?: string;
     platformChatId?: string | null;
@@ -16,11 +15,12 @@ interface PlayerListData {
     skin?: Skin | null;
     isTeacher?: boolean;
     isHost?: boolean;
+    isSubClient?: boolean; // TODO
 }
 
 export class PlayerListEntry {
     private readonly uuid: UUID;
-    private readonly uniqueEntityId: bigint | null;
+    private readonly runtimeId: bigint | null;
     private readonly name: string | null;
     private readonly xuid: string;
     private readonly platformChatId: string | null;
@@ -31,7 +31,7 @@ export class PlayerListEntry {
 
     public constructor({
         uuid,
-        uniqueEntityid,
+        runtimeId,
         name,
         xuid = '',
         platformChatId,
@@ -41,7 +41,7 @@ export class PlayerListEntry {
         isHost = true
     }: PlayerListData) {
         this.uuid = uuid;
-        this.uniqueEntityId = uniqueEntityid ?? null;
+        this.runtimeId = runtimeId ?? null;
         this.name = name ?? null;
         this.xuid = xuid;
         this.platformChatId = platformChatId ?? null;
@@ -51,23 +51,24 @@ export class PlayerListEntry {
         this.host = isHost;
     }
 
-    public networkSerialize(stream: PacketBinaryStream): void {
-        stream.writeVarLong(this.getUniqueEntityId()!);
-        stream.writeString(this.getName()!);
-        stream.writeString(this.getXUID());
-        stream.writeString(this.getPlatformChatId()!);
-        stream.writeLInt(this.getBuildPlatform()!);
+    public networkSerialize(stream: BinaryStream): void {
+        stream.writeVarLong(this.getRuntimeId()!);
+        NetworkUtil.writeString(stream, this.getName()!);
+        NetworkUtil.writeString(stream, this.getXUID()!);
+        NetworkUtil.writeString(stream, this.getPlatformChatId()!);
+        stream.writeIntLE(this.getBuildPlatform()!);
         this.getSkin()!.networkSerialize(stream);
-        stream.writeBool(this.isTeacher());
-        stream.writeBool(this.isHost());
+        stream.writeBoolean(this.isTeacher());
+        stream.writeBoolean(this.isHost());
+        stream.writeBoolean(false); // is sub client
     }
 
     public getUUID(): UUID {
         return this.uuid;
     }
 
-    public getUniqueEntityId(): bigint | null {
-        return this.uniqueEntityId;
+    public getRuntimeId(): bigint | null {
+        return this.runtimeId;
     }
 
     public getName(): string | null {
@@ -110,7 +111,7 @@ export default class PlayerListPacket extends DataPacket {
     public entries: PlayerListEntry[] = [];
     public type!: number;
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeByte(this.type);
         this.writeUnsignedVarInt(this.entries.length);
         for (const entry of this.entries) {
@@ -122,8 +123,8 @@ export default class PlayerListPacket extends DataPacket {
         }
 
         if (this.type === PlayerListAction.TYPE_ADD) {
-            for (const entry of this.entries) {
-                this.writeBool(entry.getSkin()!.isTrusted);
+            for (let i = 0; i < this.entries.length; i++) {
+                this.writeBoolean(true);
             }
         }
     }

@@ -1,7 +1,8 @@
-import { CommandDispatcher, literal } from '@jsprismarine/brigadier';
+import type { CommandDispatcher } from '@jsprismarine/brigadier';
+import { literal } from '@jsprismarine/brigadier';
 
-import Command from '../Command';
-import Player from '../../player/Player';
+import { Command } from '../Command';
+import type Player from '../../Player';
 
 export default class ListCommand extends Command {
     public constructor() {
@@ -16,9 +17,9 @@ export default class ListCommand extends Command {
         dispatcher.register(
             literal('list').executes(async (context) => {
                 const source = context.getSource() as Player;
-                const players = source.getServer().getPlayerManager().getOnlinePlayers();
+                const players = source.getServer().getSessionManager().getAllPlayers();
                 const playerArray = Array.from(players);
-                const maxPlayers = source.getServer().getRaknet().getName().getMaxPlayerCount();
+                const maxPlayers = source.getServer().getConfig().getMaxPlayers();
                 const counter = playerArray.length;
                 const answer = playerArray.map((player) => player.getName()).join(', ');
 

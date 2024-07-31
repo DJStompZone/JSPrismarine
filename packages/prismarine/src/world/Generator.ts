@@ -1,6 +1,6 @@
-import Chunk from './chunk/Chunk';
+import type Chunk from './chunk/Chunk';
 
-export default interface Generator {
+export interface Generator {
     /**
      * This function should return the generated chunk by given parameters.
      */

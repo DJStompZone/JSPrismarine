@@ -1,6 +1,6 @@
-import type Block from '../Block';
+import type { Block } from '../Block';
 import { BlockIdsType } from '../BlockIdsType';
-import type Item from '../../item/Item';
+import type { Item } from '../../item/Item';
 import type Server from '../../Server';
 import Transparent from '../Transparent';
 
@@ -16,7 +16,7 @@ export default class Glass extends Transparent {
     /**
      * Glass doesn't drop anything unless it's broken by silk touch
      */
-    public getDropsForCompatibleTool(item: Item | null, server: Server): Array<Block | Item | null> {
+    public getDropsForCompatibleTool(_item: Item | null, _server: Server): Array<Block | Item | null> {
         return [];
     }
 }

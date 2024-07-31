@@ -1,4 +1,5 @@
-import PacketBinaryStream from '../network/PacketBinaryStream';
+import type BinaryStream from '@jsprismarine/jsbinaryutils';
+import { NetworkUtil } from '../network/NetworkUtil';
 
 export const AttributeIds = {
     Absorption: 'minecraft:absorption',
@@ -30,11 +31,12 @@ export class Attribute {
     /**
      * Class used to store Attribute data.
      *
-     * @param name - Attribute identifier
-     * @param min - Attribute minimum value
-     * @param max - Attribute maximum value
-     * @param def - Attribute default value
-     * @param value - Attribute current value
+     * @param {object} data - The attribute data.
+     * @param {string} data.name - The name of the attribute.
+     * @param {number} data.min - The minimum value of the attribute.
+     * @param {number} data.max - The maximum value of the attribute.
+     * @param {number} data.def - The default value of the attribute.
+     * @param {number} data.value - The current value of the attribute.
      */
     public constructor({
         name,
@@ -56,12 +58,25 @@ export class Attribute {
         this.value = value;
     }
 
-    public networkSerialize(stream: PacketBinaryStream): void {
-        stream.writeLFloat(this.getMin());
-        stream.writeLFloat(this.getMax());
-        stream.writeLFloat(this.getValue());
-        stream.writeLFloat(this.getDefault());
-        stream.writeString(this.getName());
+    public networkSerialize(stream: BinaryStream): void {
+        stream.writeFloatLE(this.min);
+        stream.writeFloatLE(this.max);
+        stream.writeFloatLE(this.value);
+        stream.writeFloatLE(this.default);
+        NetworkUtil.writeString(stream, this.name);
+        stream.writeUnsignedVarInt(0); // TODO: modifier count
+    }
+
+    public static networkDeserialize(stream: BinaryStream): Attribute {
+        const attr = new Attribute({
+            min: stream.readFloatLE(),
+            max: stream.readFloatLE(),
+            value: stream.readFloatLE(),
+            def: stream.readFloatLE(),
+            name: NetworkUtil.readString(stream)
+        });
+        stream.readUnsignedVarInt(); // TODO: skip for now
+        return attr;
     }
 
     public getName(): string {
@@ -86,7 +101,7 @@ export class Attribute {
 }
 
 const MAX_FLOAT32 = 3.4028234663852886e38;
-export default class AttributeManager {
+export class Attributes {
     private readonly attributes: Attribute[] = [];
 
     /**
@@ -97,7 +112,7 @@ export default class AttributeManager {
             new Attribute({
                 name: AttributeIds.Absorption,
                 min: 0,
-                max: MAX_FLOAT32,
+                max: 16,
                 def: 0,
                 value: 0
             }),
@@ -105,13 +120,13 @@ export default class AttributeManager {
                 name: AttributeIds.PlayerSaturation,
                 min: 0,
                 max: 20,
-                def: 20,
-                value: 20
+                def: 5,
+                value: 4
             }),
             new Attribute({
                 name: AttributeIds.PlayerExhaustion,
                 min: 0,
-                max: 5,
+                max: 20,
                 def: 0,
                 value: 0
             }),
@@ -153,7 +168,7 @@ export default class AttributeManager {
             new Attribute({
                 name: AttributeIds.AttackDamage,
                 min: 0,
-                max: MAX_FLOAT32,
+                max: 1,
                 def: 1,
                 value: 1
             }),

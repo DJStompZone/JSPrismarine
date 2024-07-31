@@ -3,30 +3,37 @@ on:
     push:
     pull_request:
 
+env:
+    CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
 jobs:
-    macos-test:
-        runs-on: macos-latest
+    tests:
+        name: 🧪 Tests
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+        runs-on: ${{ matrix.os }}
         steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
+            - uses: actions/checkout@v4
+
+            - name: 📦 Install
+              uses: ./.github/common/install
+
+            - name: 🔨 Build
+              run: pnpm run build
+
+            - name: 📃 Typecheck
+              run: pnpm run typecheck
+
+            - name: 🧪 Test
+              run: pnpm run test
+
+            - name: 🦺 Report Coverage to GitHub
+              uses: davelosert/vitest-coverage-report-action@v2.5.0
+
+            - name: 🦺 Codecov Coverage Reports
+              uses: codecov/codecov-action@v4.5.0
               with:
-                  node-version: 14
-            - run: npm install -g npm@latest
-            - run: npm install -g lerna
-            - run: lerna bootstrap --concurrency=1
-            - run: npm install
-            - run: npm run build
-            - run: npm run test:jest
-    linux-test:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
-              with:
-                  node-version: 14
-            - run: npm install -g npm@latest
-            - run: npm install -g lerna
-            - run: lerna bootstrap --concurrency=1
-            - run: npm install
-            - run: npm run build
-            - run: npm run test:jest
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  slug: JSPrismarine/JSPrismarine
+

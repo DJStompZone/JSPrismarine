@@ -1,0 +1,44 @@
+name: Executable
+on:
+    push:
+        branches:
+            - master
+
+env:
+    TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+jobs:
+    nightly:
+        name: 🚚 Build nightly executable
+        strategy:
+            matrix:
+                os: [ubuntu, macos, windows]
+        runs-on: ${{ matrix.os }}-latest
+        continue-on-error: true
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: 📦 Install
+              uses: ./.github/common/install
+
+            - name: 🔨 Build Executable
+              id: build
+              continue-on-error: true
+              run: pnpm run build
+
+            - name: 🗃️ Package Executable
+              id: package
+              continue-on-error: true
+              run: pnpm run package
+
+            - name: 🚚 Publish Artifact
+              if: ${{ steps.build.outcome == 'success' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: prismarine-${{ matrix.os }}
+                  path: |
+                      ./dist/prismarine
+                      ./dist/prismarine.exe
+

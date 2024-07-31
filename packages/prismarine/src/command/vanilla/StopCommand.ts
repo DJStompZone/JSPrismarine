@@ -1,7 +1,8 @@
-import { CommandDispatcher, literal } from '@jsprismarine/brigadier';
+import type { CommandDispatcher } from '@jsprismarine/brigadier';
+import { literal } from '@jsprismarine/brigadier';
 
-import Command from '../Command';
-import Player from '../../player/Player';
+import { Command } from '../Command';
+import type Player from '../../Player';
 
 export default class StopCommand extends Command {
     public constructor() {
@@ -17,7 +18,7 @@ export default class StopCommand extends Command {
             literal('stop').executes(async (context) => {
                 const source = context.getSource() as Player;
 
-                await source.getServer().getServer().kill();
+                await source.getServer().getServer().shutdown();
                 return 'Stopping the server...';
             })
         );

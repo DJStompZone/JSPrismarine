@@ -1,37 +1,42 @@
-import DataPacket from './DataPacket';
+import { NetworkUtil } from '../../network/NetworkUtil';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class ResourcePackStackPacket extends DataPacket {
     public static NetID = Identifiers.ResourcePackStackPacket;
 
-    public mustAccept!: boolean;
-    public behaviorPackStack = [];
-    public resourcePackStack = [];
+    public texturePackRequired!: boolean;
+    public addonList = [];
+    public texturePackList = [];
 
     // TODO: make a holder / manager
-    public experiments: Map<string, boolean> = new Map() as Map<string, boolean>;
+    public experiments: Map<string, boolean> = new Map();
     public experimentsAlreadyEnabled!: boolean;
 
-    public encodePayload() {
-        this.writeBool(this.mustAccept);
+    public encodePayload(): void {
+        this.writeBoolean(this.texturePackRequired);
 
-        this.writeUnsignedVarInt(this.behaviorPackStack.length);
-        for (const _behaviorPackStack of this.behaviorPackStack) {
-            this.writeString('');
-            this.writeString('');
-            this.writeString('');
+        this.writeUnsignedVarInt(this.addonList.length);
+        for (const _behaviorPackStack of this.addonList) {
+            NetworkUtil.writeString(this, '');
+            NetworkUtil.writeString(this, '');
+            NetworkUtil.writeString(this, '');
         }
 
-        this.writeUnsignedVarInt(this.resourcePackStack.length);
-        for (const _resourcePackStack of this.resourcePackStack) {
-            this.writeString('');
-            this.writeString('');
-            this.writeString('');
+        this.writeUnsignedVarInt(this.texturePackList.length);
+        for (const _resourcePackStack of this.texturePackList) {
+            NetworkUtil.writeString(this, '');
+            NetworkUtil.writeString(this, '');
+            NetworkUtil.writeString(this, '');
         }
 
-        this.writeString(Identifiers.MinecraftVersion);
+        NetworkUtil.writeString(this, '*'); // Same as vanilla, should be the game version
 
-        this.writeLInt(this.experiments.size); // Experiments count
-        this.writeBool(this.experimentsAlreadyEnabled); // Experiemnts previously toggled?
+        // TODO: write properly experiments
+        this.writeUnsignedIntLE(0); // Experiments count
+
+        this.writeBoolean(this.experimentsAlreadyEnabled); // Experiemnts previously toggled?
+
+        this.writeBoolean(false); // Include editor packs
     }
 }

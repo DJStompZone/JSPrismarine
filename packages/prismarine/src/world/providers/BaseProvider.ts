@@ -1,14 +1,14 @@
+import type { Generator, World } from '../';
+import type { Server } from '../../';
 import type Chunk from '../chunk/Chunk';
-import Generator from '../Generator';
-import Provider from './Provider';
-import type Server from '../../Server';
-import type World from '../World';
-import fs from 'fs';
+import type Provider from './Provider';
+
+import fs from 'node:fs';
 
 export default abstract class BaseProvider implements Provider {
-    private path: string;
-    private server: Server;
-    private world!: World;
+    protected path: string;
+    protected server: Server;
+    protected world!: World;
 
     public constructor(path: string, server: Server) {
         this.server = server;
@@ -25,8 +25,16 @@ export default abstract class BaseProvider implements Provider {
         return this.world;
     }
 
-    public async onEnable() {}
-    public async onDisable() {}
+    /**
+     * On enable hook.
+     * @group Lifecycle
+     */
+    public async enable(): Promise<void> {}
+    /**
+     * On disable hook.
+     * @group Lifecycle
+     */
+    public async disable(): Promise<void> {}
 
     public getServer(): Server {
         return this.server;
@@ -42,15 +50,15 @@ export default abstract class BaseProvider implements Provider {
     /**
      * Returns a chunk decoded from the provider.
      *
-     * @param cx the chunk x coordinate.
-     * @param cz the chunk y coordinate.
+     * @param cx - the chunk x coordinate.
+     * @param cz - the chunk y coordinate.
      */
     public abstract readChunk(cx: number, cz: number, seed: number, generator: Generator, config?: any): Promise<Chunk>;
 
     /**
      * Writes a chunk.
      *
-     * @param chunk the chunk data.
+     * @param chunk - the chunk data.
      */
     public abstract writeChunk(chunk: Chunk): Promise<void>;
 }

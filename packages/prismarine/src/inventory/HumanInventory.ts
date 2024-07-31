@@ -1,5 +1,6 @@
-import ContainerEntry from './ContainerEntry';
+import type ContainerEntry from './ContainerEntry';
 import Inventory from './Inventory';
+import type { Item } from '../item/Item';
 
 export default class HumanInventory extends Inventory {
     private get handSlot() {
@@ -20,7 +21,7 @@ export default class HumanInventory extends Inventory {
     /**
      * Returns the item in the player hand.
      */
-    public getItemInHand(): ContainerEntry {
+    public getItemInHand(): Item {
         return this.getItem(this.handSlot);
     }
 

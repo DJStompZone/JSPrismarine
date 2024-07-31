@@ -1,7 +1,5 @@
 /**
  * Timer/Performance measurement utility.
- *
- * @public
  */
 export default class Timer {
     /**
@@ -12,7 +10,7 @@ export default class Timer {
     /**
      * The end time.
      */
-    private endTime!: [number, number];
+    private endTime: [number, number] | undefined;
 
     public constructor() {
         this.startTime = process.hrtime();

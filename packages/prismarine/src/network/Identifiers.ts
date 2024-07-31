@@ -1,7 +1,6 @@
 const Identifiers = {
-    Protocol: 440,
-
-    MinecraftVersion: '1.17.0',
+    Protocol: 686,
+    MinecraftVersions: ['1.21.2'],
 
     LoginPacket: 0x01,
     PlayStatusPacket: 0x02,
@@ -56,19 +55,18 @@ const Identifiers = {
     CraftingDataPacket: 0x34,
     CraftingEventPacket: 0x35,
     GuiDataPickItemPacket: 0x36,
-    AdventureSettingsPacket: 0x37,
     BlockActorDataPacket: 0x38,
     PlayerInputPacket: 0x39,
     LevelChunkPacket: 0x3a,
     SetCommandsEnabledPacket: 0x3b,
     SetDifficultyPacket: 0x3c,
     ChangeDimensionPacket: 0x3d,
-    SetPlayerGameTypePacket: 0x3e,
+    SetPlayerGametypePacket: 0x3e,
     PlayerListPacket: 0x3f,
     SimpleEventPacket: 0x40,
     EventPacket: 0x41,
     SpawnExperienceOrbPacket: 0x42,
-    ClientboundMapItemDataPacket: 0x43,
+    ClientBoundMapItemDataPacket: 0x43,
     MapInfoRequestPacket: 0x44,
     RequestChunkRadiusPacket: 0x45,
     ChunkRadiusUpdatedPacket: 0x46,
@@ -106,7 +104,7 @@ const Identifiers = {
     ServerSettingsRequestPacket: 0x66,
     ServerSettingsResponsePacket: 0x67,
     ShowProfilePacket: 0x68,
-    SetDefaultGameTypePacket: 0x69,
+    SetDefaultGametypePacket: 0x69,
     RemoveObjectivePacket: 0x6a,
     SetDisplayObjectivePacket: 0x6b,
     SetScorePacket: 0x6c,
@@ -163,7 +161,11 @@ const Identifiers = {
     CorrectPlayerMovePredictionPacket: 0xa1,
     ItemComponentPacket: 0xa2,
     FilterTextPacket: 0xa3,
-    ClientboundDebugRendererPacket: 0xa4
+    ClientBoundDebugRendererPacket: 0xa4,
+    RequestNetworkSettingsPacket: 0xc1,
+    UpdateAdventureSettingsPacket: 0xbc,
+    UpdateAbilitiesPacket: 0xbb,
+    ToastRequestPacket: 0xba
 };
 
 export default Identifiers;

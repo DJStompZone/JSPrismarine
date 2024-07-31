@@ -1,11 +1,5 @@
-import Entity from '../Entity';
-import Server from '../../Server';
-import World from '../../world/World';
+import { Entity } from '../Entity';
 
 export default class Blaze extends Entity {
     public static MOB_ID = 'minecraft:blaze';
-
-    public constructor(world: World, server: Server) {
-        super(world, server);
-    }
 }

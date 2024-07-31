@@ -1,11 +1,11 @@
 import { item_id_map as BlockIdMap } from '@jsprismarine/bedrock-data';
-import { BlockToolType } from './BlockToolType';
-import Item from '../item/Item';
+import type Server from '../Server';
+import type { Item } from '../item/Item';
 import { ItemEnchantmentType } from '../item/ItemEnchantmentType';
 import { ItemTieredToolType } from '../item/ItemTieredToolType';
-import Server from '../Server';
+import { BlockToolType } from './BlockToolType';
 
-export default class Block {
+export class Block {
     /**
      * The block's numeric block ID.
      */
@@ -41,14 +41,20 @@ export default class Block {
         parentName?: string;
         hardness?: number;
     }) {
+        Object.setPrototypeOf(this, Block.prototype);
         this.id = id;
         this.name = name;
-        this.hardness = hardness ?? 0;
-        this.name = name;
         this.javaName = javaName ?? name;
+        this.hardness = hardness ?? 0;
 
         this.networkId = BlockIdMap[parentName ?? name] as number;
-        // if (!this.networkId) console.log(name, id, this.networkId);
+    }
+
+    public get [Symbol.toStringTag]() {
+        return `Block(${this.toString()})`;
+    }
+    public toString() {
+        return this.name;
     }
 
     /**
@@ -78,7 +84,7 @@ export default class Block {
      * Get the Block's network numeric id.
      */
     public getNetworkId() {
-        return this.networkId ?? this.getId();
+        return this.networkId || this.getId();
     }
 
     /**
@@ -91,7 +97,7 @@ export default class Block {
     /**
      * Get the Block's break time.
      */
-    public getBreakTime(item: Item | null, server: Server) {
+    public getBreakTime(_item: Item | null, _server: Server) {
         return this.getHardness(); // TODO: Fix break time calculations
 
         /* let base = this.getHardness();
@@ -138,7 +144,7 @@ export default class Block {
     /**
      * Get the Block's drop(s) if the tool is compatible.
      */
-    public getDropsForCompatibleTool(item: Item | null, server: Server): Array<Block | Item | null> {
+    public getDropsForCompatibleTool(_item: Item | null, _server: Server): Array<Block | Item | null> {
         return [this];
     }
 
@@ -159,7 +165,7 @@ export default class Block {
     /**
      * Get the Block's drop(s) if silk touch is used.
      */
-    public getSilkTouchDrops(item: Item, server: Server) {
+    public getSilkTouchDrops(_item: Item, _server: Server) {
         return [this];
     }
 

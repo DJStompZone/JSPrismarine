@@ -1,18 +1,21 @@
-import type { CommandDispatcher } from '@jsprismarine/brigadier';
-import type Player from '../player/Player';
+import { ArgumentCommandNode, type CommandDispatcher } from '@jsprismarine/brigadier';
 
-interface CommandProps {
+export interface CommandProps {
     id: string;
     description?: string;
     permission?: string;
     aliases?: string[];
 }
 
-export default class Command {
+export class Command {
     /**
      * The command's id in a `[namespace]:[id]` format.
      */
     public id: string;
+
+    public get name(): string {
+        return this.id.split(':').at(-1)!;
+    }
 
     /**
      * The command's description.
@@ -39,12 +42,17 @@ export default class Command {
     /**
      * Register the command.
      */
-    public async register(dispatcher: CommandDispatcher<any>): Promise<void> {}
+    public async register(_dispatcher: CommandDispatcher<any>): Promise<void> {}
 
-    /**
-     * Run the command.
-     *
-     * @deprecated Replaced with "Command.register"
-     */
-    public async execute(sender: Player, args: any[]): Promise<any> {}
+    public usage(dispatcher: CommandDispatcher<any>): string {
+        // TODO: Improve this, it's not really accurate right now.
+        return Array.from(dispatcher.findNode([this.name])?.getChildren() || [])
+            .map((child) => {
+                if (!(child instanceof ArgumentCommandNode)) return null;
+                return child.getUsageText();
+            })
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+    }
 }

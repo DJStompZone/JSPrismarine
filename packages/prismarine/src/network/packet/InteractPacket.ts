@@ -1,5 +1,5 @@
-import DataPacket from './DataPacket';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export enum InteractAction {
     LeaveVehicle = 3,
@@ -18,25 +18,25 @@ export default class InteractPacket extends DataPacket {
     public y!: number;
     public z!: number;
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeByte(this.action);
         this.writeUnsignedVarLong(this.target);
 
         if (this.action === InteractAction.MouseOver) {
-            this.writeLFloat(this.x);
-            this.writeLFloat(this.y);
-            this.writeLFloat(this.z);
+            this.writeFloatLE(this.x);
+            this.writeFloatLE(this.y);
+            this.writeFloatLE(this.z);
         }
     }
 
-    public decodePayload() {
+    public decodePayload(): void {
         this.action = this.readByte();
         this.target = this.readUnsignedVarLong();
 
         if (this.action === InteractAction.MouseOver) {
-            this.x = this.readLFloat();
-            this.y = this.readLFloat();
-            this.z = this.readLFloat();
+            this.x = this.readFloatLE();
+            this.y = this.readFloatLE();
+            this.z = this.readFloatLE();
         }
     }
 }

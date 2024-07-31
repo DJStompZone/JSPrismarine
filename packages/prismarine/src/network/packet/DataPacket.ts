@@ -1,4 +1,4 @@
-import PacketBinaryStream from '../PacketBinaryStream';
+import BinaryStream from '@jsprismarine/jsbinaryutils';
 
 const PID_MASK = 0x3ff;
 const SENDER_SHIFT = 10;
@@ -7,10 +7,10 @@ const SUBCLIENT_MASK = 0x03;
 
 /**
  * The base class for all packets.
- *
+ * @class
  * @public
  */
-export default class DataPacket extends PacketBinaryStream {
+export default class DataPacket extends BinaryStream {
     /**
      * The packet's network ID.
      */
@@ -22,11 +22,15 @@ export default class DataPacket extends PacketBinaryStream {
     private senderSubId = 0;
     private receiverSubId = 0;
 
-    public getId() {
+    constructor(buffer?: Buffer) {
+        super(buffer, 0);
+    }
+
+    public getId(): number {
         return (this.constructor as any).NetID;
     }
 
-    public getEncoded() {
+    public getEncoded(): boolean {
         return this.encoded;
     }
 
@@ -39,8 +43,7 @@ export default class DataPacket extends PacketBinaryStream {
         return this.constructor.name;
     }
 
-    public decode() {
-        this.setOffset(0);
+    public decode(): void {
         this.decodeHeader();
         this.decodePayload();
 
@@ -52,6 +55,7 @@ export default class DataPacket extends PacketBinaryStream {
 
     public decodeHeader() {
         const header = this.readUnsignedVarInt();
+
         const pid = header & PID_MASK;
         if (pid !== this.getId()) {
             throw new Error(`Packet ID must be ${this.getId()}, got ${pid}`);
@@ -64,16 +68,16 @@ export default class DataPacket extends PacketBinaryStream {
     /**
      * Decode the packet from a network serialized buffer.
      */
-    public decodePayload() {}
+    public decodePayload(): void {}
 
-    public encode() {
-        this.reset();
+    public encode(): void {
+        this.clear(); // We might not want to actually clear the buffer here.
         this.encodeHeader();
         this.encodePayload();
         this.encoded = true;
     }
 
-    public encodeHeader() {
+    public encodeHeader(): void {
         this.writeUnsignedVarInt(
             this.getId() | (this.senderSubId << SENDER_SHIFT) | (this.receiverSubId << RECEIVER_SHIFT)
         );
@@ -82,9 +86,9 @@ export default class DataPacket extends PacketBinaryStream {
     /**
      * Encode the packet to a network serialized buffer.
      */
-    public encodePayload() {}
+    public encodePayload(): void {}
 
-    public getAllowBatching() {
+    public getAllowBatching(): boolean {
         return (this as any).allowBatching;
     }
 }

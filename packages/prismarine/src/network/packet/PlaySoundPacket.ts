@@ -1,6 +1,7 @@
-import BlockPosition from '../../world/BlockPosition';
-import DataPacket from './DataPacket';
+import { NetworkUtil } from '../../network/NetworkUtil';
+import type BlockPosition from '../../world/BlockPosition';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export enum SoundName {
     // Ambient
@@ -72,12 +73,12 @@ export default class PlaySoundPacket extends DataPacket {
     public pitch: number | null = null;
 
     public decodePayload(): void {
-        // Reverse mapping should work theorycally
-        this.name = (SoundName as any)[this.readString()] as SoundName;
-        this.position = BlockPosition.networkDeserialize(this);
+        // Reverse mapping should work theoretically
+        this.name = (SoundName as any)[NetworkUtil.readString(this)] as SoundName;
+        this.position = NetworkUtil.readBlockPosition(this);
         // TODO: fix position, divide it by 8
-        this.volume = this.readLFloat();
-        this.pitch = this.readLFloat();
+        this.volume = this.readFloatLE();
+        this.pitch = this.readFloatLE();
     }
 
     public encodePayload(): void {}

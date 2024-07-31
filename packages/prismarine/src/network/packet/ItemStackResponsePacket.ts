@@ -1,13 +1,13 @@
-import DataPacket from './DataPacket';
+import type { Item } from '../../item/Item';
 import Identifiers from '../Identifiers';
-import Item from '../../item/Item';
+import DataPacket from './DataPacket';
 
 export default class ItemStackResponsePacket extends DataPacket {
     public static NetID = Identifiers.ItemStackResponsePacket;
 
     public responses = [];
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeVarInt(this.responses.length);
         this.responses.forEach((response: Item) => {
             response.networkSerialize(this);

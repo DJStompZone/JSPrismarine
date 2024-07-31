@@ -1,7 +1,6 @@
 import BanCommand from './vanilla/BanCommand';
 import DebugCommand from './jsprismarine/DebugCommand';
 import DeopCommand from './vanilla/DeopCommand';
-import EvalCommand from './jsprismarine/EvalCommand';
 import ExecuteCommand from './vanilla/ExecuteCommand';
 import GamemodeCommand from './vanilla/GamemodeCommand';
 import GameruleCommand from './vanilla/GameruleCommand';
@@ -11,7 +10,6 @@ import ListCommand from './vanilla/ListCommand';
 import MeCommand from './vanilla/MeCommand';
 import OpCommand from './vanilla/OpCommand';
 import PardonCommand from './vanilla/PardonCommand';
-import PluginsCommand from './jsprismarine/PluginsCommand';
 import ReloadCommand from './jsprismarine/ReloadCommand';
 import SayCommand from './vanilla/SayCommand';
 import StopCommand from './vanilla/StopCommand';
@@ -25,7 +23,6 @@ export {
     BanCommand,
     DebugCommand,
     DeopCommand,
-    EvalCommand,
     ExecuteCommand,
     GamemodeCommand,
     GameruleCommand,
@@ -35,7 +32,6 @@ export {
     MeCommand,
     OpCommand,
     PardonCommand,
-    PluginsCommand,
     ReloadCommand,
     SayCommand,
     StopCommand,

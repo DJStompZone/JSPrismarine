@@ -1,26 +1,25 @@
 import ACK from './ACK';
 import AcknowledgePacket from './AcknowledgePacket';
 import BitFlags from './BitFlags';
-import ConnectedPing from './ConnectedPing';
-import ConnectedPong from './ConnectedPong';
-import ConnectionRequest from './ConnectionRequest';
-import ConnectionRequestAccepted from './ConnectionRequestAccepted';
-import DataPacket from './DataPacket';
+import ConnectedPing from './connection/ConnectedPing';
+import ConnectedPong from './connection/ConnectedPong';
+import ConnectionRequest from './login/ConnectionRequest';
+import ConnectionRequestAccepted from './login/ConnectionRequestAccepted';
 import DisconnectNotification from './DisconnectNotification';
-import EncapsulatedPacket from './EncapsulatedPacket';
-import Identifiers from './Identifiers';
-import IncompatibleProtocolVersion from './IncompatibleProtocolVersion';
+import Frame from './Frame';
+import FrameReliability from './FrameReliability';
+import FrameSet from './FrameSet';
+import IncompatibleProtocolVersion from './connection/IncompatibleProtocolVersion';
 import NACK from './NACK';
-import NewIncomingConnection from './NewIncomingConnection';
+import NewIncomingConnection from './connection/NewIncomingConnection';
 import OfflinePacket from './OfflinePacket';
-import OpenConnectionReply1 from './OpenConnectionReply1';
-import OpenConnectionReply2 from './OpenConnectionReply2';
-import OpenConnectionRequest1 from './OpenConnectionRequest1';
-import OpenConnectionRequest2 from './OpenConnectionRequest2';
+import OpenConnectionReply1 from './connection/OpenConnectionReply1';
+import OpenConnectionReply2 from './connection/OpenConnectionReply2';
+import OpenConnectionRequest1 from './connection/OpenConnectionRequest1';
+import OpenConnectionRequest2 from './connection/OpenConnectionRequest2';
 import Packet from './Packet';
-import ReliabilityLayer from './ReliabilityLayer';
-import UnconnectedPing from './UnconnectedPing';
-import UnconnectedPong from './UnconnectedPong';
+import UnconnectedPing from './offline/UnconnectedPing';
+import UnconnectedPong from './offline/UnconnectedPong';
 
 export {
     ACK,
@@ -30,10 +29,9 @@ export {
     ConnectedPong,
     ConnectionRequest,
     ConnectionRequestAccepted,
-    DataPacket,
+    FrameSet,
     DisconnectNotification,
-    EncapsulatedPacket,
-    Identifiers,
+    Frame,
     IncompatibleProtocolVersion,
     NACK,
     NewIncomingConnection,
@@ -43,7 +41,7 @@ export {
     OpenConnectionRequest1,
     OpenConnectionRequest2,
     Packet,
-    ReliabilityLayer,
+    FrameReliability,
     UnconnectedPing,
     UnconnectedPong
 };

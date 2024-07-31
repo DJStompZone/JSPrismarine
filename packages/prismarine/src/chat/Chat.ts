@@ -1,26 +1,46 @@
 import type Console from '../Console';
-import type Player from '../player/Player';
+import type Player from '../Player';
 
 export enum ChatType {
-    Raw = 0,
-    Chat = 1,
-    System = 6,
-    Announcement = 8
+    RAW = 0,
+    CHAT = 1,
+    TRANSLATION = 2,
+    SYSTEM = 6,
+    ANNOUNCEMENT = 8
 }
-export default class Chat {
+
+export class Chat {
     private readonly channel: string;
     private readonly sender: Player | Console;
     private readonly message: string;
+    private readonly parameters: string[];
+    private readonly needsTranslation: boolean;
     private readonly type: ChatType;
 
-    public constructor(sender: Player | Console, message: string, channel = '*.everyone', type = ChatType.Chat) {
-        this.sender = sender;
-        this.channel = channel;
+    public constructor({
+        channel,
+        message,
+        needsTranslation,
+        parameters,
+        sender,
+        type
+    }: {
+        channel?: string;
+        message: string;
+        needsTranslation?: boolean;
+        parameters?: string[];
+        sender: Player | Console;
+        type?: ChatType;
+    }) {
+        this.channel = channel ?? '*.everyone';
         this.message = message;
-        this.type = type;
+        this.needsTranslation = needsTranslation ?? false; // TODO: handle translations.
+        this.parameters = parameters ?? [];
+        this.sender = sender;
+        this.type = type ?? ChatType.CHAT;
     }
 
-    public getChannel() {
+    public getChannel(): string {
         return this.channel;
     }
 
@@ -28,11 +48,19 @@ export default class Chat {
         return this.sender;
     }
 
-    public getMessage() {
+    public getMessage(): string {
         return this.message;
     }
 
-    public getType() {
+    public getParameters(): string[] {
+        return this.parameters;
+    }
+
+    public isNeedsTranslation(): boolean {
+        return this.needsTranslation;
+    }
+
+    public getType(): ChatType {
         return this.type;
     }
 }

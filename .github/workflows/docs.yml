@@ -1,25 +1,29 @@
 name: Generate Documentations
 on:
     push:
-        branches:
-            - master
+    pull_request:
 
 jobs:
-    artifacts:
+    build-and-publish-docs:
+        name: 📖 Build and Publish Docs
         runs-on: ubuntu-latest
+        env:
+            TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
         steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
-              with:
-                  node-version: 14
-            - run: npm install -g npm@latest
-            - run: npm install -g lerna
-            - run: lerna bootstrap --concurrency=1
-            - run: npm install
-            - run: npm run build
-            - uses: peaceiris/actions-gh-pages@v3
+            - uses: actions/checkout@v4
+            - name: 📦 Install
+              uses: ./.github/common/install
+
+            - run: pnpm run build
+
+            - run: pnpm run build:docs
+            
+            - uses: peaceiris/actions-gh-pages@v4
+              if: github.event_name == 'push' && github.ref == 'refs/heads/master'
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: ./docs
+                  publish_dir: ./dist
                   enable_jekyll: false
-                  cname: docs.prismarine.dev
+                  cname: 'docs.jsprismarine.org'
+                  commit_message: ${{ github.event.head_commit.message }}

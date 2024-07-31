@@ -1,5 +1,6 @@
-import Entity from '../entity/Entity';
-import Player from '../player/Player';
+import { getGametypeName } from '@jsprismarine/minecraft';
+import type Player from '../Player';
+import type { Entity } from '../entity/Entity';
 
 /**
  * Parse target selector argument.
@@ -22,8 +23,6 @@ import Player from '../player/Player';
  * `@e[type=player,gamemode=creative,limit=3]`
  *
  * @returns The entities matching the target query
- *
- * @public
  */
 const ParseTargetSelector = ({
     input,
@@ -49,12 +48,12 @@ const ParseTargetSelector = ({
     const args =
         str
             .split('[')[1]
-            ?.split(']')[0]
+            ?.split(']')[0]!
             .split(',')
             .map((arg) => ({
                 argument: arg.split('=')[0],
-                value: arg.split('=')[1].replace('!', ''),
-                reverse: arg.split('=')[1].startsWith('!')
+                value: arg.split('=')[1]!.replace('!', ''),
+                reverse: arg.split('=')[1]!.startsWith('!')
             })) || [];
 
     // Filters
@@ -114,8 +113,8 @@ const ParseTargetSelector = ({
                     (entity) =>
                         entity.isPlayer() &&
                         (filter.reverse
-                            ? (entity as Player).getGamemode() !== filter.value
-                            : (entity as Player).getGamemode() === filter.value)
+                            ? getGametypeName((entity as Player).gamemode).toLowerCase() !== filter.value.toLowerCase()
+                            : getGametypeName((entity as Player).gamemode).toLowerCase() === filter.value.toLowerCase())
                 );
                 break;
 
@@ -139,14 +138,14 @@ const ParseTargetSelector = ({
             break;
         case 'random':
             // FIXME: respect limit filter
-            targets = [targets[Math.floor(Math.random() * targets.length)]];
+            targets = [targets[Math.floor(Math.random() * targets.length)]!];
             break;
-        case 'arbitrary':
+        // TODO: case 'arbitrary':
         default:
             break;
     }
 
-    targets = targets.filter((a) => a).slice(0, limit);
+    targets = targets.slice(0, limit);
     if (targets.length <= 0) throw new Error('no results');
     return targets;
 };

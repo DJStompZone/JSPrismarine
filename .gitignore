@@ -8,7 +8,6 @@ dist/
 /plugins/
 /builds/
 /worlds/
-docs/
 config.yaml
 ops.json
 banned-players.json
@@ -17,9 +16,17 @@ permissions.json
 /logs/
 /jsp/
 
+# Build
+.tsup
+vite.config.ts.timestamp*
+
+# Turbo cache
+.turbo/
+
 # Text editors/IDE things
 .idea
-.vscode
 .DS_Store
 report.*.json
 *.cpuprofile
+.tsbuildinfo
+*.tsbuildinfo

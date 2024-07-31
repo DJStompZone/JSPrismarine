@@ -1,8 +1,8 @@
-import { ItemProps } from './Item';
+import type { ItemProps } from './Item';
 import { ItemTieredToolType } from './ItemTieredToolType';
 import Tool from './Tool';
 
-export default class TieredTool extends Tool {
+export class TieredTool extends Tool {
     private readonly tier: ItemTieredToolType = ItemTieredToolType.None;
 
     public constructor(args: ItemProps, tier: ItemTieredToolType) {

@@ -1,11 +1,11 @@
-/* eslint-disable promise/prefer-await-to-then */
+import type { CommandDispatcher } from '@jsprismarine/brigadier';
+import { argument, literal } from '@jsprismarine/brigadier';
 import { CommandArgumentEntity, CommandArgumentPosition } from '../CommandArguments';
-import { CommandDispatcher, argument, literal } from '@jsprismarine/brigadier';
 
-import Command from '../Command';
+import { Vector3 } from '@jsprismarine/math';
+import type Player from '../../Player';
 import MovementType from '../../network/type/MovementType';
-import Player from '../../player/Player';
-import Vector3 from '../../math/Vector3';
+import { Command } from '../Command';
 
 export default class TpCommand extends Command {
     public constructor() {
@@ -40,7 +40,10 @@ export default class TpCommand extends Command {
                                 } else position.setZ(position.getZ() + 0.5);
                             }
 
-                            await source.setPosition(position, MovementType.Teleport);
+                            await source.setPosition({
+                                position,
+                                type: MovementType.Teleport
+                            });
                             return `Teleported ${source.getFormattedUsername()} to ${position.getX()} ${position.getY()} ${position.getZ()}`;
                         }
                     )
@@ -51,7 +54,6 @@ export default class TpCommand extends Command {
                             argument('position', new CommandArgumentPosition({ name: 'destination' })).executes(
                                 async (context) => {
                                     const targets = context.getArgument('player') as Player[];
-
                                     const position = context.getArgument('position') as Vector3;
 
                                     if (Number.isInteger(position.getX())) {
@@ -65,11 +67,17 @@ export default class TpCommand extends Command {
                                         } else position.setZ(position.getZ() + 0.5);
                                     }
 
-                                    if (!targets?.length)
+                                    if (!targets.length)
                                         throw new Error(`Cannot find specified player(s) & entit(y/ies)`);
 
-                                    targets.forEach(async (entity) =>
-                                        entity.setPosition(position, MovementType.Teleport)
+                                    await Promise.all(
+                                        targets.map(
+                                            async (entity: Player) =>
+                                                await entity.setPosition({
+                                                    position,
+                                                    type: MovementType.Teleport
+                                                })
+                                        )
                                     );
 
                                     return `Teleported ${targets
@@ -84,11 +92,18 @@ export default class TpCommand extends Command {
                                     const sources = context.getArgument('player') as Player[];
                                     const target = context.getArgument('target')?.[0] as Player;
 
-                                    if (!sources?.length)
+                                    if (!sources.length)
                                         throw new Error(`Cannot find specified player(s) & entit(y/ies)`);
-                                    sources.forEach(async (entity) =>
-                                        entity.setPosition(target.getPosition(), MovementType.Teleport)
+
+                                    await Promise.all(
+                                        sources.map(async (entity: Player) =>
+                                            entity.setPosition({
+                                                position: target.getPosition(),
+                                                type: MovementType.Teleport
+                                            })
+                                        )
                                     );
+
                                     return `Teleported ${sources
                                         .map((entity) => entity.getFormattedUsername())
                                         .join(', ')} to ${target.getFormattedUsername()}`;
@@ -101,10 +116,10 @@ export default class TpCommand extends Command {
 
                             if (!source.isPlayer()) throw new Error(`This command can't be run from the console`);
 
-                            await source.setPosition(
-                                new Vector3(target.getX(), target.getY(), target.getZ()),
-                                MovementType.Teleport
-                            );
+                            await source.setPosition({
+                                position: new Vector3(target.getX(), target.getY(), target.getZ()),
+                                type: MovementType.Teleport
+                            });
                             return `Teleported ${source.getFormattedUsername()} to ${target.getFormattedUsername()}`;
                         })
                 )

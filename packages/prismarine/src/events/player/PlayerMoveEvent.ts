@@ -1,7 +1,7 @@
-import Event from '../Event';
+import { Vector3 } from '@jsprismarine/math';
+import type Player from '../../Player';
 import MovementType from '../../network/type/MovementType';
-import type Player from '../../player/Player';
-import Vector3 from '../../math/Vector3';
+import { Event } from '../Event';
 
 /**
  * Fired just before a player moves

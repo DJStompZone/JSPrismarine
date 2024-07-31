@@ -1,5 +1,6 @@
-import DataPacket from './DataPacket';
+import { NetworkUtil } from '../../network/NetworkUtil';
 import Identifiers from '../Identifiers';
+import DataPacket from './DataPacket';
 
 export default class PacketViolationWarningPacket extends DataPacket {
     public static NetID = Identifiers.PacketViolationWarningPacket;
@@ -9,17 +10,17 @@ export default class PacketViolationWarningPacket extends DataPacket {
     public packetId!: number;
     public message!: string;
 
-    public encodePayload() {
+    public encodePayload(): void {
         this.writeVarInt(this.type);
         this.writeVarInt(this.severity);
         this.writeVarInt(this.packetId);
-        this.writeString(this.message);
+        NetworkUtil.writeString(this, this.message);
     }
 
-    public decodePayload() {
+    public decodePayload(): void {
         this.type = this.readVarInt();
         this.severity = this.readVarInt();
         this.packetId = this.readVarInt();
-        this.message = this.readString();
+        this.message = NetworkUtil.readString(this);
     }
 }
